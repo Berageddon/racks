@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import GitHubIcon from "../components/GitHubIcon";
+import { GITHUB_REPO_URL, ADERYN_REPORT_URL, SLITHER_REPORT_URL, AUDIT_CI_URL } from "../config";
 
 const SECTIONS = [
   { id: "overview", label: "Overview" },
@@ -404,9 +406,39 @@ function Security() {
           so pot balances can never be rug-pulled via a rescue call.
         </li>
       </ul>
+      <div className="docs-callout">
+        <b>Audit status</b> — the contract passes automated static analysis with{" "}
+        <b>Slither</b> (Trail of Bits) and <b>Cyfrin Aderyn</b>, re-run on every push in public CI.
+        Every finding either scanner raised was reviewed line-by-line; remaining entries are false
+        positives or accepted design trade-offs, annotated in the reports below.
+      </div>
+      <ul className="audit-links">
+        <li>
+          <a href={GITHUB_REPO_URL} target="_blank" rel="noreferrer">
+            <GitHubIcon size={15} />
+            Source code on GitHub
+          </a>
+        </li>
+        <li>
+          <a href={ADERYN_REPORT_URL} target="_blank" rel="noreferrer">
+            Aderyn report
+          </a>
+        </li>
+        <li>
+          <a href={SLITHER_REPORT_URL} target="_blank" rel="noreferrer">
+            Slither report
+          </a>
+        </li>
+        <li>
+          <a href={AUDIT_CI_URL} target="_blank" rel="noreferrer">
+            Audit CI status
+          </a>
+        </li>
+      </ul>
       <div className="docs-callout warn">
-        Nothing here is audited yet. Deploy at your own risk. This documentation applies to the
-        current contract as published; any modifications to parameters are broadcast on-chain.
+        Automated scanning is not a substitute for a professional human audit, and on-chain games
+        carry real financial risk — play only with funds you can afford to lose. The repository and
+        reports are public so the contract can be reviewed by anyone before participating.
       </div>
     </section>
   );

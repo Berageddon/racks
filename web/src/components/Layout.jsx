@@ -1,6 +1,8 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
 import WalletButton from "./WalletButton";
+import GitHubIcon from "./GitHubIcon";
 import { useBuy } from "./BuyModal";
+import { GITHUB_REPO_URL, ADERYN_REPORT_URL, SLITHER_REPORT_URL, AUDIT_CI_URL } from "../config";
 
 export default function Layout() {
   const { openBuy } = useBuy();
@@ -76,6 +78,32 @@ export default function Layout() {
                 <li>
                   <a href="https://docs.robinhood.com/chain" target="_blank" rel="noreferrer">
                     Robinhood Chain
+                  </a>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4>Audit &amp; source</h4>
+              <ul>
+                <li>
+                  <a className="footer-icon-link" href={GITHUB_REPO_URL} target="_blank" rel="noreferrer">
+                    <GitHubIcon size={15} />
+                    View source code
+                  </a>
+                </li>
+                <li>
+                  <a href={ADERYN_REPORT_URL} target="_blank" rel="noreferrer">
+                    Aderyn report
+                  </a>
+                </li>
+                <li>
+                  <a href={SLITHER_REPORT_URL} target="_blank" rel="noreferrer">
+                    Slither report
+                  </a>
+                </li>
+                <li>
+                  <a href={AUDIT_CI_URL} target="_blank" rel="noreferrer">
+                    Audit CI status
                   </a>
                 </li>
               </ul>

@@ -54,6 +54,12 @@ export const wagmiConfig = getDefaultConfig({
 export const GAME_ADDRESS = import.meta.env.VITE_RACKS_GAME;
 export const TOKEN_ADDRESS = import.meta.env.VITE_RACKS_TOKEN;
 
+// --- Public source & audit trail (github.com/Berageddon/racks) ---
+export const GITHUB_REPO_URL = "https://github.com/Berageddon/racks";
+export const ADERYN_REPORT_URL = `${GITHUB_REPO_URL}/blob/master/audit/aderyn-report.md`;
+export const SLITHER_REPORT_URL = `${GITHUB_REPO_URL}/blob/master/audit/slither-report.md`;
+export const AUDIT_CI_URL = `${GITHUB_REPO_URL}/actions`;
+
 const fmt = (n, d = 0) =>
   new Intl.NumberFormat("en-US", { maximumFractionDigits: d }).format(Number(n));
 

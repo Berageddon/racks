@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import { useGameData, useCountdown } from "../game/hooks";
 import { useBuy } from "../components/BuyModal";
-import { formatRacks, shortAddr } from "../config";
+import GitHubIcon from "../components/GitHubIcon";
+import { formatRacks, shortAddr, GITHUB_REPO_URL, ADERYN_REPORT_URL, SLITHER_REPORT_URL } from "../config";
 import { TOKEN_CA, SWAP_LINKS, TOKEN_STATS } from "../token";
 
 function CountdownRing({ total, remaining }) {
@@ -105,6 +106,19 @@ export default function Landing() {
               </Link>
             </div>
             <p className="hero-note">Winner 95% · 2.5% auto-seeds the next round · 2.5% team.</p>
+            <div className="trust-row">
+              <a className="trust-item" href={GITHUB_REPO_URL} target="_blank" rel="noreferrer">
+                <GitHubIcon size={14} />
+                Open source
+              </a>
+              <a className="trust-item" href={ADERYN_REPORT_URL} target="_blank" rel="noreferrer">
+                Aderyn &#10003;
+              </a>
+              <a className="trust-item" href={SLITHER_REPORT_URL} target="_blank" rel="noreferrer">
+                Slither &#10003;
+              </a>
+              <span className="trust-item trust-note">static analysis passed</span>
+            </div>
           </div>
 
           <PotPreview />
