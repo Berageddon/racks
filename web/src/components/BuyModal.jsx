@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useState } from "react";
-import { TOKEN_SYMBOL, TOKEN_CA, SWAP_LINKS, TOKEN_STATS } from "../token";
+import { TOKEN_SYMBOL, TOKEN_CA, SWAP_LINKS } from "../token";
+import { useTokenStats } from "../tokenStats";
 
 const BuyContext = createContext(null);
 
@@ -22,6 +23,7 @@ export function useBuy() {
 
 function BuyModal({ open, onClose }) {
   const [copied, setCopied] = useState(false);
+  const { stats } = useTokenStats();
 
   if (!open) return null;
 
@@ -71,7 +73,7 @@ function BuyModal({ open, onClose }) {
         </div>
 
         <div className="modal-stats">
-          {TOKEN_STATS.map((s) => (
+          {stats.map((s) => (
             <div className="modal-stat" key={s.label}>
               <div className="ms-label">{s.label}</div>
               <div className="ms-value">{s.value}</div>
@@ -80,8 +82,8 @@ function BuyModal({ open, onClose }) {
         </div>
 
         <div className="modal-foot">
-          Numbers reflect the pons listing. Bridge ETH for gas, then swap. Always confirm the
-          contract address above against the official listing.
+          Live figures straight from the chain and the AMM pool. Bridge ETH for gas, then swap.
+          Always confirm the contract address above against the official listing.
         </div>
       </div>
     </div>

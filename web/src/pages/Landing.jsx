@@ -3,17 +3,19 @@ import { useGameData, useCountdown } from "../game/hooks";
 import { useBuy } from "../components/BuyModal";
 import GitHubIcon from "../components/GitHubIcon";
 import { formatRacks, shortAddr, GITHUB_REPO_URL, ADERYN_REPORT_URL, SLITHER_REPORT_URL } from "../config";
-import { TOKEN_CA, SWAP_LINKS, TOKEN_STATS } from "../token";
+import { TOKEN_CA, SWAP_LINKS } from "../token";
+import { useTokenStats } from "../tokenStats";
 
-function CountdownRing({ total, remaining }) {
+function CountdownRing({ total, remaining, ready }) {
   const R = 48;
   const CIRC = 2 * Math.PI * R;
-  const passed = Math.max(0, total - remaining);
+  const r = ready && remaining != null ? remaining : 0;
+  const passed = Math.max(0, total - r);
   const pct = total > 0 ? passed / total : 0;
-  const low = remaining <= 10 && total > 0;
-  const mins = Math.floor(remaining / 60);
-  const secs = remaining % 60;
-  const time = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  const low = r <= 10 && total > 0;
+  const mins = Math.floor(r / 60);
+  const secs = r % 60;
+  const time = ready ? `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}` : "—:—";
 
   return (
     <div className={`ring ${low ? "low" : ""}`}>
@@ -34,7 +36,7 @@ function CountdownRing({ total, remaining }) {
       <div className="ring-center">
         <div>
           <div className="ring-time">{time}</div>
-          <div className="ring-caption">{remaining === 0 && total > 0 ? "CLOSED" : low ? "FINAL" : "TO BELL"}</div>
+          <div className="ring-caption">{!ready ? "SYNCING" : r === 0 && total > 0 ? "CLOSED" : low ? "FINAL" : "TO BELL"}</div>
         </div>
       </div>
     </div>
@@ -43,10 +45,10 @@ function CountdownRing({ total, remaining }) {
 
 function PotPreview() {
   const d = useGameData();
-  const { remaining } = useCountdown(d.roundEndsAt);
+  const { remaining, ready } = useCountdown(d.timeRemaining);
   const hasBids = d.topBidder && d.topBidder !== "0x0000000000000000000000000000000000000000";
-  const status = !hasBids ? "idle" : remaining === 0 ? "over" : "live";
-  const label = d.loading ? "…" : !hasBids ? "Awaiting first rack" : remaining === 0 ? "Round settled" : "Live round";
+  const status = !hasBids ? "idle" : ready && remaining === 0 ? "over" : "live";
+  const label = d.loading ? "…" : !hasBids ? "Awaiting first rack" : ready && remaining === 0 ? "Round settled" : "Live round";
 
   return (
     <div className="pot-card">
@@ -60,7 +62,7 @@ function PotPreview() {
           <div className="pot-value">{formatRacks(d.potTotal)}</div>
           <div className="pot-unit">$RACKS</div>
         </div>
-        <CountdownRing total={d.roundTime ? Number(d.roundTime) : 0} remaining={remaining} />
+        <CountdownRing total={d.roundTime ? Number(d.roundTime) : 0} remaining={remaining} ready={ready} />
       </div>
       <div className="pc-stats">
         <div className="pc-stat">
@@ -78,6 +80,7 @@ function PotPreview() {
 
 export default function Landing() {
   const { openBuy } = useBuy();
+  const { stats } = useTokenStats();
   return (
     <>
       <section className="hero">
@@ -247,7 +250,7 @@ export default function Landing() {
                 Token snapshot
               </span>
               <div className="grid cols-2">
-                {TOKEN_STATS.map((s) => (
+                {stats.map((s) => (
                   <div className="card card-hover" key={s.label}>
                     <div className="stat-label">{s.label}</div>
                     <div className="stat-value" style={{ fontSize: 24 }}>
@@ -257,7 +260,7 @@ export default function Landing() {
                 ))}
               </div>
               <p style={{ color: "var(--faint)", fontSize: 13, marginTop: 14 }}>
-                Figures mirror the pons listing. Verify the contract address before any trade.
+                Live figures straight from the chain and the AMM pool. Verify the contract address before any trade.
               </p>
               <Link className="btn btn-outline btn-sm" to="/docs" style={{ marginTop: 12 }}>
                 Contract docs

@@ -9,16 +9,17 @@ import ChatPanel from "../components/ChatPanel";
 
 const TICK_MULTIPLES = [1, 2, 5, 10, 25];
 
-function CountdownRing({ total, remaining }) {
+function CountdownRing({ total, remaining, ready }) {
   const R = 48;
   const CIRC = 2 * Math.PI * R;
-  const passed = Math.max(0, total - remaining);
+  const r = ready && remaining != null ? remaining : 0;
+  const passed = Math.max(0, total - r);
   const pct = total > 0 ? passed / total : 0;
-  const low = remaining <= 10 && total > 0;
-  const mins = Math.floor(remaining / 60);
-  const secs = remaining % 60;
-  const time = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
-  const closed = total > 0 && remaining === 0;
+  const low = r <= 10 && total > 0;
+  const mins = Math.floor(r / 60);
+  const secs = r % 60;
+  const time = ready ? `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}` : "—:—";
+  const closed = ready && total > 0 && r === 0;
 
   return (
     <div className={`ring ${low ? "low" : ""}`}>
@@ -39,7 +40,7 @@ function CountdownRing({ total, remaining }) {
       <div className="ring-center">
         <div>
           <div className="ring-time">{time}</div>
-          <div className="ring-caption">{closed ? "CLOSED" : low ? "FINAL" : "TO BELL"}</div>
+          <div className="ring-caption">{!ready ? "SYNCING" : closed ? "CLOSED" : low ? "FINAL" : "TO BELL"}</div>
         </div>
       </div>
     </div>
@@ -61,10 +62,10 @@ function WinBanner({ winner, round }) {
 export default function Play() {
   const { isConnected } = useAccount();
   const d = useGameData();
-  const { remaining } = useCountdown(d.roundEndsAt);
+  const { remaining, ready } = useCountdown(d.timeRemaining);
 
   const hasBids = d.topBidder && d.topBidder !== "0x0000000000000000000000000000000000000000";
-  const roundOver = hasBids && remaining === 0;
+  const roundOver = hasBids && ready && remaining === 0;
   const waitingFirstBid = !hasBids;
   const status = waitingFirstBid ? "idle" : roundOver ? "over" : "live";
   const label = d.loading ? "Loading…" : waitingFirstBid ? "Awaiting first rack" : roundOver ? "Round settled" : "Live round";
@@ -91,7 +92,7 @@ export default function Play() {
               <div className="pot-value">{formatRacks(d.potTotal)}</div>
               <div className="pot-unit">$RACKS</div>
             </div>
-            <CountdownRing total={d.roundTime ? Number(d.roundTime) : 0} remaining={remaining} />
+            <CountdownRing total={d.roundTime ? Number(d.roundTime) : 0} remaining={remaining} ready={ready} />
           </div>
 
           <div className="top-wrap">
