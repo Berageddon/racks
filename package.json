@@ -1,0 +1,22 @@
+{
+  "name": "racks-game",
+  "version": "1.0.0",
+  "description": "RACKS - count-up auction game for Robinhood Chain",
+  "private": true,
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:testnet": "hardhat run scripts/deploy.js --network rhTestnet",
+    "deploy:mainnet": "hardhat run scripts/deploy.js --network rhMainnet",
+    "verify:testnet": "hardhat run scripts/verify.js --network rhTestnet",
+    "verify:mainnet": "hardhat run scripts/verify.js --network rhMainnet"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.22.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.2",
+    "dotenv": "^16.4.5"
+  }
+}
