@@ -39,6 +39,7 @@ jobs:
         run: |
           curl -sSL https://github.com/cyfrin/aderyn/releases/download/aderyn-v0.6.8/aderyn-x86_64-unknown-linux-gnu.tar.xz -o aderyn.tar.xz
           tar -xJf aderyn.tar.xz
+          mv aderyn-x86_64-unknown-linux-gnu/aderyn ./aderyn
           chmod +x ./aderyn
 
       - name: Run Aderyn
