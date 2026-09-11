@@ -52,9 +52,17 @@ export default function Layout() {
                 Chain.
               </p>
               <div className="footer-social">
-                <a className="footer-icon-link" href={X_URL} target="_blank" rel="noreferrer" aria-label="RACKS on X">
-                  <XIcon size={15} />
-                  X
+                <a className="footer-social-link" href={X_URL} target="_blank" rel="noreferrer" aria-label="RACKS on X">
+                  <XIcon size={16} />
+                </a>
+                <a
+                  className="footer-social-link"
+                  href={GITHUB_REPO_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="RACKS source code on GitHub"
+                >
+                  <GitHubIcon size={16} />
                 </a>
               </div>
             </div>
@@ -90,14 +98,8 @@ export default function Layout() {
               </ul>
             </div>
             <div>
-              <h4>Audit &amp; source</h4>
+              <h4>Audits</h4>
               <ul>
-                <li>
-                  <a className="footer-icon-link" href={GITHUB_REPO_URL} target="_blank" rel="noreferrer">
-                    <GitHubIcon size={15} />
-                    View source code
-                  </a>
-                </li>
                 <li>
                   <a href={ADERYN_REPORT_URL} target="_blank" rel="noreferrer">
                     Aderyn report

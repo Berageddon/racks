@@ -860,22 +860,27 @@ code.mono {
 .footer-social {
   display: inline-flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
   margin-top: 18px;
 }
 
 .footer-social a {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
   color: var(--ink-soft);
-  font-size: 14px;
-  font-weight: 600;
   text-decoration: none;
+  transition: color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
 
 .footer-social a:hover {
   color: var(--accent);
+  border-color: var(--accent);
+  transform: translateY(-1px);
 }
 
 .audit-links {

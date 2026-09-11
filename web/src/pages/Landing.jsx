@@ -118,6 +118,7 @@ export default function Landing() {
                 Slither &#10003;
               </a>
               <span className="trust-item trust-note">static analysis passed</span>
+              <span className="trust-item trust-note">rules can&apos;t change</span>
             </div>
           </div>
 
@@ -180,30 +181,34 @@ export default function Landing() {
               2.5% of every settled pot automatically seeds the round that follows.
             </p>
           </div>
-          <div className="grid cols-3" style={{ marginTop: 32 }}>
-            <div className="card card-soft">
-              <div className="stat-label">Increment tick</div>
-              <div className="stat-value">10,000</div>
-              <p style={{ color: "var(--muted)", fontSize: 14, marginTop: 6 }}>
-                $RACKS per step, configurable by the owner.
-              </p>
-            </div>
-            <div className="card card-soft">
-              <div className="stat-label">Countdown</div>
-              <div className="stat-value">180s</div>
-              <p style={{ color: "var(--muted)", fontSize: 14, marginTop: 6 }}>
-                Reset on every bid. Front-running neutral by design.
-              </p>
-            </div>
-            <div className="card card-soft">
-              <div className="stat-label">Settlement</div>
-<div className="stat-value">95 / 2.5 / 2.5</div>
+<div className="grid cols-3" style={{ marginTop: 32 }}>
+              <div className="card card-soft">
+                <div className="stat-label">Increment tick</div>
+                <div className="stat-value">10,000</div>
                 <p style={{ color: "var(--muted)", fontSize: 14, marginTop: 6 }}>
-                Winner takes 95%, 2.5% seeds next, 2.5% treasury.
-              </p>
+                  $RACKS per step. Fixed at deployment — cannot be changed.
+                </p>
+              </div>
+              <div className="card card-soft">
+                <div className="stat-label">Countdown</div>
+                <div className="stat-value">180s</div>
+                <p style={{ color: "var(--muted)", fontSize: 14, marginTop: 6 }}>
+                  Reset on every bid. Front-running neutral by design.
+                </p>
+              </div>
+              <div className="card card-soft">
+                <div className="stat-label">Settlement</div>
+                <div className="stat-value">95 / 2.5 / 2.5</div>
+                <p style={{ color: "var(--muted)", fontSize: 14, marginTop: 6 }}>
+                  Winner takes 95%, 2.5% seeds next, 2.5% treasury.
+                </p>
+              </div>
             </div>
+            <p style={{ color: "var(--muted)", fontSize: 14, marginTop: 14 }}>
+              The tick, countdown, and dev wallet are locked at deployment — the rules can never be
+              changed, not even by the owner.
+            </p>
           </div>
-        </div>
       </section>
 
       <section className="section">
