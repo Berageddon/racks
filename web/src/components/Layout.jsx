@@ -1,4 +1,5 @@
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 import WalletButton from "./WalletButton";
 import GitHubIcon from "./GitHubIcon";
 import XIcon from "./XIcon";
@@ -7,6 +8,12 @@ import { GITHUB_REPO_URL, ADERYN_REPORT_URL, SLITHER_REPORT_URL, AUDIT_CI_URL, X
 
 export default function Layout() {
   const { openBuy } = useBuy();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
 
   return (
     <>
@@ -33,8 +40,27 @@ export default function Layout() {
               <span className="buy-word">Buy</span> RACKS
             </button>
             <WalletButton />
+            <button
+              className={`menu-toggle ${menuOpen ? "open" : ""}`}
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label="Menu"
+              aria-expanded={menuOpen}
+            >
+              <span />
+              <span />
+              <span />
+            </button>
           </div>
         </div>
+        {menuOpen && (
+          <nav className="mobile-menu">
+            <NavLink to="/" end>
+              Home
+            </NavLink>
+            <NavLink to="/play">Play</NavLink>
+            <NavLink to="/docs">Docs</NavLink>
+          </nav>
+        )}
       </header>
 
       <Outlet />
