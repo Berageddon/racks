@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity 0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -92,7 +92,7 @@ contract RacksGame is Ownable, Pausable, ReentrancyGuard {
     }
 
     /// @notice Owner seeds the current (not yet started) round with the starting pot.
-    function seed(uint256 amount) external onlyOwner nonReentrant whenNotPaused {
+    function seed(uint256 amount) external nonReentrant onlyOwner whenNotPaused {
         if (amount == 0) revert ZeroAmount();
         if (topBid != 0) revert RoundLive(round);
         uint256 received = _collect(msg.sender, amount);
