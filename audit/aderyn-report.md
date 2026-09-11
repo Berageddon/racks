@@ -12,8 +12,8 @@ Automated static analysis of **`contracts/RacksGame.sol`**, generated with
 > The report was re-validated against the **final contract**, in which the admin
 > setters (`setTick`, `setRoundTime`, `setDevWallet`) and pause controls were removed
 > and `tick` / `roundTime` / `devWallet` are **immutable**. The owner surface now holds
-> exactly two functions (`seed`, `rescueTokens`), which is why L-1 drops from 8 to 2
-> instances below.
+> exactly two functions (`seed`, `rescueTokens`); Aderyn lists 3 centralization
+> instances (the contract-level `Ownable` plus those two functions), down from 8.
 
 This is automated scanning, **not a substitute for a professional human audit.** The
 open-source contract remains freely reviewable:
@@ -24,7 +24,7 @@ https://github.com/Berageddon/racks
 | Item | Value |
 | --- | --- |
 | Tool | Aderyn v0.6.8 (Cyfrin) |
-| Target | `contracts/RacksGame.sol` (148 nSLOC) |
+| Target | `contracts/RacksGame.sol` (121 nSLOC) |
 | Excluded | `contracts/mocks/` |
 | Companion tests | 21 behavioral tests in `test/RacksGame.js` (Hardhat) |
 | Related report | [`slither-report.md`](slither-report.md) |
@@ -102,15 +102,15 @@ immutable contract, for transparency alongside the adjudication above.
 | Key | Value |
 | --- | --- |
 | .sol Files | 1 |
-| Total nSLOC | 148 |
+| Total nSLOC | 121 |
 
 
 ## Files Details
 
 | Filepath | nSLOC |
 | --- | --- |
-| contracts/RacksGame.sol | 148 |
-| **Total** | **148** |
+| contracts/RacksGame.sol | 121 |
+| **Total** | **121** |
 
 
 ## Issue Summary
@@ -164,8 +164,14 @@ Changing state after an external call can lead to re-entrancy attacks.Use the ch
 
 Contracts have owners with privileged rights to perform admin tasks and need to be trusted to not perform malicious updates or drain funds.
 
-<details><summary>2 Found Instances</summary>
+<details><summary>3 Found Instances</summary>
 
+
+- Found in contracts/RacksGame.sol [Line: 18](contracts/RacksGame.sol#L18)
+
+	```solidity
+	contract RacksGame is Ownable, ReentrancyGuard {
+	```
 
 - Found in contracts/RacksGame.sol [Line: 90](contracts/RacksGame.sol#L90)
 
@@ -196,7 +202,7 @@ Large literal values multiples of 10000 can be replaced with scientific notation
 	    uint256 public constant BPS_DENOMINATOR = 10_000;
 	```
 
-- Found in contracts/RacksGame.sol [Line: 84](contracts/RacksGame.sol#L84)
+- Found in contracts/RacksGame.sol [Line: 83](contracts/RacksGame.sol#L83)
 
 	```solidity
 	        tick = 10_000;
