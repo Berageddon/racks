@@ -12,19 +12,35 @@ The web app is a full product site (Vite + React + wagmi + RainbowKit):
 - `/#/play` — the game (live pot, countdown, bid controls, recent racks)
 - `/#/docs` — full documentation (mechanics, contract, token, security, deploy, FAQ)
 
-Design system: clean, professional, Robinhood-inspired white canvas with the `#ccff00` accent.
+Design system: dark premium Robinhood-inspired theme with the `#c8ff00` accent.
 
 ## Repo layout
 
 ```
 contracts/RacksGame.sol   Game logic (count-up all-pay auction)
 contracts/mocks/          MockRacks test token
-test/RacksGame.js         16 test cases (Hardhat)
+test/RacksGame.js         22 test cases (Hardhat)
 scripts/deploy.js         Deploy to RH testnet/mainnet
 scripts/verify.js         Verify on Blockscout
 scripts/export-abi.js     Push ABI into web/src/contracts
 web/                      Frontend (landing + play + docs)
 ```
+
+## Audit
+
+Automated static analysis runs on every push (GitHub Actions, `.github/workflows/audit.yml`):
+
+![Slither](https://github.com/Berageddon/racks/actions/workflows/audit.yml/badge.svg)
+
+- **Slither** (Trail of Bits) and **Cyfrin Aderyn**: zero high/medium/low findings.
+- Remaining informationals were adjudicated (false positives or by design):
+  - locked-ether / reentrancy — false positives; `receive()` reverts and `settle()` is `nonReentrant` with state committed before payouts.
+  - centralization — by design (`onlyOwner` controls, listed under Owner settings); the winner payout split (95 / 2.5 / 2.5) is enforced on-chain.
+  - timestamp / large literals — inherent auction clock / cosmetic.
+- Reports: [`audit/slither-report.md`](audit/slither-report.md) · [`audit/aderyn-report.md`](audit/aderyn-report.md)
+- On the site: footer and Docs → Security link straight to the repo, both reports, and live CI status.
+
+This is automated static analysis, not a substitute for a human audit.
 
 ## Game rules
 
