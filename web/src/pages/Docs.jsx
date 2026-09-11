@@ -202,8 +202,8 @@ function Contract() {
       <h2>Smart contract</h2>
       <p>
         The game is a single contract: <span className="mono">RacksGame</span> (Solidity 0.8.24).
-        It inherits OpenZeppelin&apos;s <span className="mono">Ownable</span>,{" "}
-        <span className="mono">Pausable</span>, and <span className="mono">ReentrancyGuard</span>.
+        It inherits OpenZeppelin&apos;s <span className="mono">Ownable</span> and{" "}
+        <span className="mono">ReentrancyGuard</span>. Game rules (tick, countdown, dev wallet) are fixed at deployment and immutable.
       </p>
 
       <h3>Deployed addresses</h3>
@@ -284,22 +284,6 @@ function Contract() {
             <tr>
               <td className="mono">seed(uint256)</td>
               <td>Adds owner $RACKS to the opening pot of a not-yet-started round.</td>
-            </tr>
-            <tr>
-              <td className="mono">setTick(uint256)</td>
-              <td>Changes the bid increment for future bids.</td>
-            </tr>
-            <tr>
-              <td className="mono">setRoundTime(uint256)</td>
-              <td>Changes the countdown length.</td>
-            </tr>
-            <tr>
-              <td className="mono">setDevWallet(address)</td>
-              <td>Redirects the 2.5% treasury share.</td>
-            </tr>
-            <tr>
-              <td className="mono">pause() / unpause()</td>
-              <td>Stops or resumes bidding (safety switch).</td>
             </tr>
             <tr>
               <td className="mono">rescueTokens(address,uint256)</td>
@@ -394,8 +378,8 @@ function Security() {
           <b>No custody.</b> Funds live in the public contract. Anyone can verify balances on Blockscout.
         </li>
         <li>
-          <b>Owner safety rails.</b> The owner can only configure parameters or pause the game —
-          they cannot withdraw the pot or override a settlement.
+          <b>Immutable rules.</b> The owner can only seed the pot and recover non-game tokens — tick,
+          countdown, and dev wallet are fixed at deployment and can never be changed mid-game.
         </li>
         <li>
           <b>Tick math is integer-exact.</b> Splits use basis points (9500/250/250) with no

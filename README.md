@@ -130,6 +130,8 @@ with swap links + contract address + token stats. Real launch data goes in `web/
 
 ## Owner settings (on contract)
 
-- `setTick(uint256)` / `setRoundTime(uint256)` / `setDevWallet(address)` / `pause()` / `unpause()`
-- `seed(uint256)` top-up for a fresh round.
+- `seed(uint256)` top-up for a fresh round (owner only, called before round 1).
 - `rescueTokens(address,uint256)` recovers stray tokens other than $RACKS.
+
+All game rules — `tick`, `roundTime`, `devWallet` — are **immutable** and set at deployment.
+The payout split (9500 / 250 / 250 BPS) is a compile-time constant and cannot be changed.

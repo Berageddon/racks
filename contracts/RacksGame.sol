@@ -4,7 +4,6 @@ pragma solidity 0.8.24;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
@@ -14,8 +13,9 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
  *      must be strictly higher than the current top bid and resets a countdown.
  *      When the countdown expires, the current top bidder wins 95% of the pot,
  *      2.5% is banked for the dev, and 2.5% auto-seeds the next round.
+ *      Game rules (tick, countdown, dev wallet) are fixed at deployment and immutable.
  */
-contract RacksGame is Ownable, Pausable, ReentrancyGuard {
+contract RacksGame is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     /// Basis points for payout split out of 10_000.
@@ -27,14 +27,14 @@ contract RacksGame is Ownable, Pausable, ReentrancyGuard {
     /// The $RACKS token accepted as currency.
     IERC20 public immutable racks;
 
-    /// Wallet that receives the dev share.
-    address public devWallet;
+    /// Wallet that permanently receives the dev share (fixed at deployment).
+    address public immutable devWallet;
 
     /// Bid increment. Every bid must be a multiple of this and at least topBid + this.
-    uint256 public tick;
+    uint256 public immutable tick;
 
     /// Countdown, in seconds, reset on every bid.
-    uint256 public roundTime;
+    uint256 public immutable roundTime;
 
     // --- Current round ---
     uint256 public round;
@@ -62,9 +62,6 @@ contract RacksGame is Ownable, Pausable, ReentrancyGuard {
         uint256 devAmount,
         uint256 nextPot
     );
-    event DevWalletUpdated(address indexed devWallet);
-    event TickUpdated(uint256 tick);
-    event RoundTimeUpdated(uint256 roundTime);
 
     // --- Errors ---
     error RoundLive(uint256 round);
@@ -74,8 +71,6 @@ contract RacksGame is Ownable, Pausable, ReentrancyGuard {
     error BidTooLow(uint256 provided, uint256 minimum);
     error NotMultipleOfTick(uint256 amount, uint256 tick);
     error ZeroAmount();
-    error InvalidTick(uint256 tick);
-    error InvalidRoundTime(uint256 roundTime);
     error InvalidToken(address token);
     error InvalidDevWallet(address devWallet);
     error TransferFailed();
@@ -92,7 +87,7 @@ contract RacksGame is Ownable, Pausable, ReentrancyGuard {
     }
 
     /// @notice Owner seeds the current (not yet started) round with the starting pot.
-    function seed(uint256 amount) external nonReentrant onlyOwner whenNotPaused {
+    function seed(uint256 amount) external nonReentrant onlyOwner {
         if (amount == 0) revert ZeroAmount();
         if (topBid != 0) revert RoundLive(round);
         uint256 received = _collect(msg.sender, amount);
@@ -103,7 +98,7 @@ contract RacksGame is Ownable, Pausable, ReentrancyGuard {
 
     /// @notice Place a bid. Amount must be a whole multiple of `tick` and at least
     ///         the current top bid plus one `tick`. Non-refundable (all-pay).
-    function bid(uint256 amount) external nonReentrant whenNotPaused {
+    function bid(uint256 amount) external nonReentrant {
         if (amount == 0) revert ZeroAmount();
         if (amount % tick != 0) revert NotMultipleOfTick(amount, tick);
         if (topBid == 0) {
@@ -171,36 +166,6 @@ contract RacksGame is Ownable, Pausable, ReentrancyGuard {
     function rescueTokens(address token, uint256 amount) external onlyOwner {
         if (token == address(racks)) revert TransferFailed();
         IERC20(token).safeTransfer(msg.sender, amount);
-    }
-
-    // --- Owner configuration ---
-
-    function setTick(uint256 tick_) external onlyOwner {
-        if (tick_ == 0) revert InvalidTick(tick_);
-        tick = tick_;
-        emit TickUpdated(tick);
-    }
-
-    function setRoundTime(uint256 roundTime_) external onlyOwner {
-        if (roundTime_ == 0) revert InvalidRoundTime(roundTime_);
-        roundTime = roundTime_;
-        emit RoundTimeUpdated(roundTime);
-    }
-
-    function setDevWallet(address devWallet_) external onlyOwner {
-        if (devWallet_ == address(0)) revert InvalidDevWallet(devWallet_);
-        devWallet = devWallet_;
-        emit DevWalletUpdated(devWallet);
-    }
-
-    /// @notice Owner: pause the game (no bids / no seeding while paused).
-    function pause() external onlyOwner {
-        _pause();
-    }
-
-    /// @notice Owner: unpause the game.
-    function unpause() external onlyOwner {
-        _unpause();
     }
 
     function _collect(address from, uint256 amount) private returns (uint256 received) {

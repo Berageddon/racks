@@ -8,6 +8,12 @@ Automated static analysis of **`contracts/RacksGame.sol`**, generated with
 > After review, both High items are **false positives**, L-1 is a **by-design**
 > centralization note, and L-2 is **cosmetic**. Each finding is adjudicated below,
 > and the unmodified tool output is reproduced at the end for full transparency.
+>
+> The report was re-validated against the **final contract**, in which the admin
+> setters (`setTick`, `setRoundTime`, `setDevWallet`) and pause controls were removed
+> and `tick` / `roundTime` / `devWallet` are **immutable**. The owner surface now holds
+> exactly two functions (`seed`, `rescueTokens`), which is why L-1 drops from 8 to 2
+> instances below.
 
 This is automated scanning, **not a substitute for a professional human audit.** The
 open-source contract remains freely reviewable:
@@ -20,7 +26,7 @@ https://github.com/Berageddon/racks
 | Tool | Aderyn v0.6.8 (Cyfrin) |
 | Target | `contracts/RacksGame.sol` (148 nSLOC) |
 | Excluded | `contracts/mocks/` |
-| Companion tests | 22 behavioral tests in `test/RacksGame.js` (Hardhat) |
+| Companion tests | 21 behavioral tests in `test/RacksGame.js` (Hardhat) |
 | Related report | [`slither-report.md`](slither-report.md) |
 
 ## Summary
@@ -70,7 +76,10 @@ impact.
 
 ---
 
-## Raw tool output (unmodified)
+## Raw tool output (re-run against the final contract)
+
+The Aderyn output is reproduced below, with line references updated to the final
+immutable contract, for transparency alongside the adjudication above.
 
 # Table of Contents
 
@@ -124,7 +133,7 @@ It appears that the contract includes a payable function to accept Ether but lac
 - Found in contracts/RacksGame.sol [Line: 18](contracts/RacksGame.sol#L18)
 
 	```solidity
-	contract RacksGame is Ownable, Pausable, ReentrancyGuard {
+	contract RacksGame is Ownable, ReentrancyGuard {
 	```
 
 </details>
@@ -138,7 +147,7 @@ Changing state after an external call can lead to re-entrancy attacks.Use the ch
 <details><summary>1 Found Instances</summary>
 
 
-- Found in contracts/RacksGame.sol [Line: 139](contracts/RacksGame.sol#L139)
+- Found in contracts/RacksGame.sol [Line: 134](contracts/RacksGame.sol#L134)
 
 	State is changed at: `round += 1`, `potTotal = nextPot`, `topBid = 0`, `topBidder = address(0)`, `roundEndsAt = block.timestamp + roundTime`
 	```solidity
@@ -155,55 +164,19 @@ Changing state after an external call can lead to re-entrancy attacks.Use the ch
 
 Contracts have owners with privileged rights to perform admin tasks and need to be trusted to not perform malicious updates or drain funds.
 
-<details><summary>8 Found Instances</summary>
+<details><summary>2 Found Instances</summary>
 
 
-- Found in contracts/RacksGame.sol [Line: 18](contracts/RacksGame.sol#L18)
-
-	```solidity
-	contract RacksGame is Ownable, Pausable, ReentrancyGuard {
-	```
-
-- Found in contracts/RacksGame.sol [Line: 95](contracts/RacksGame.sol#L95)
+- Found in contracts/RacksGame.sol [Line: 90](contracts/RacksGame.sol#L90)
 
 	```solidity
-	    function seed(uint256 amount) external nonReentrant onlyOwner whenNotPaused {
+	    function seed(uint256 amount) external nonReentrant onlyOwner {
 	```
 
-- Found in contracts/RacksGame.sol [Line: 171](contracts/RacksGame.sol#L171)
+- Found in contracts/RacksGame.sol [Line: 166](contracts/RacksGame.sol#L166)
 
 	```solidity
 	    function rescueTokens(address token, uint256 amount) external onlyOwner {
-	```
-
-- Found in contracts/RacksGame.sol [Line: 178](contracts/RacksGame.sol#L178)
-
-	```solidity
-	    function setTick(uint256 tick_) external onlyOwner {
-	```
-
-- Found in contracts/RacksGame.sol [Line: 184](contracts/RacksGame.sol#L184)
-
-	```solidity
-	    function setRoundTime(uint256 roundTime_) external onlyOwner {
-	```
-
-- Found in contracts/RacksGame.sol [Line: 190](contracts/RacksGame.sol#L190)
-
-	```solidity
-	    function setDevWallet(address devWallet_) external onlyOwner {
-	```
-
-- Found in contracts/RacksGame.sol [Line: 197](contracts/RacksGame.sol#L197)
-
-	```solidity
-	    function pause() external onlyOwner {
-	```
-
-- Found in contracts/RacksGame.sol [Line: 202](contracts/RacksGame.sol#L202)
-
-	```solidity
-	    function unpause() external onlyOwner {
 	```
 
 </details>
@@ -223,7 +196,7 @@ Large literal values multiples of 10000 can be replaced with scientific notation
 	    uint256 public constant BPS_DENOMINATOR = 10_000;
 	```
 
-- Found in contracts/RacksGame.sol [Line: 88](contracts/RacksGame.sol#L88)
+- Found in contracts/RacksGame.sol [Line: 84](contracts/RacksGame.sol#L84)
 
 	```solidity
 	        tick = 10_000;

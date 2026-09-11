@@ -19,7 +19,6 @@ export function useGameData() {
   const roundEndsAt = useReadContract({ ...common, functionName: "roundEndsAt" });
   const tick = useReadContract({ ...common, functionName: "tick" });
   const roundTime = useReadContract({ ...common, functionName: "roundTime" });
-  const paused = useReadContract({ ...common, functionName: "paused" });
   const devWallet = useReadContract({ ...common, functionName: "devWallet" });
 
   const tokenCommon = { address: TOKEN_ADDRESS, abi: erc20Abi, chainId: target.id };
@@ -48,7 +47,6 @@ export function useGameData() {
     roundEndsAt: roundEndsAt.data,
     tick: tick.data,
     roundTime: roundTime.data,
-    paused: paused.data,
     devWallet: devWallet.data,
     balance: balance.data,
     allowance: allowance.data,

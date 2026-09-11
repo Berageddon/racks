@@ -144,13 +144,10 @@ describe("RacksGame", () => {
     expect(await game.round()).to.equal(2n);
   });
 
-  it("owner can update tick / round time / dev wallet", async () => {
-    await game.setTick(20_000n);
-    expect(await game.tick()).to.equal(20_000n);
-    await game.setRoundTime(300n);
-    expect(await game.roundTime()).to.equal(300n);
-    await game.setDevWallet(alice.address);
-    expect(await game.devWallet()).to.equal(alice.address);
+  it("keeps game rules fixed: tick / roundTime / devWallet are immutable", async () => {
+    expect(await game.tick()).to.equal(TICK);
+    expect(await game.roundTime()).to.equal(ROUND_TIME);
+    expect(await game.devWallet()).to.equal(dev.address);
   });
 
   it("renounces nothing can be rescued for the game token", async () => {
@@ -161,19 +158,9 @@ describe("RacksGame", () => {
     );
   });
 
-  it("respects pause: no bids while paused", async () => {
-    await game.seed(SEED);
-    await game.pause();
-    await expect(game.connect(alice).bid(TICK)).to.be.revertedWithCustomError(game, "EnforcedPause");
-    await game.unpause();
-    await game.connect(alice).bid(TICK);
-    expect(await game.topBid()).to.equal(TICK);
-  });
-
-  it("non-owners cannot seed or change config", async () => {
+  it("non-owners cannot seed or rescue tokens", async () => {
     await expect(game.connect(alice).seed(SEED)).to.be.revertedWithCustomError(game, "OwnableUnauthorizedAccount");
-    await expect(game.connect(alice).setTick(20_000n)).to.be.revertedWithCustomError(game, "OwnableUnauthorizedAccount");
-    await expect(game.connect(alice).setDevWallet(alice.address)).to.be.revertedWithCustomError(
+    await expect(game.connect(alice).rescueTokens(racks.getAddress(), 1n)).to.be.revertedWithCustomError(
       game,
       "OwnableUnauthorizedAccount"
     );

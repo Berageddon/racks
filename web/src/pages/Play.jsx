@@ -77,7 +77,6 @@ export default function Play() {
           <span className="mono">VITE_RACKS_TOKEN</span> in <span className="mono">web/.env</span> to play.
         </div>
       )}
-      {d.paused && <div className="banner warn">The game is paused. Bidding is currently disabled by the owner.</div>}
 
       <div className="play-grid">
         <section className="game-card hero-card">
@@ -188,9 +187,7 @@ function BidPanel({ d, connected, roundOver, waitingFirstBid }) {
 
       {error && <div className="error">{error}</div>}
 
-      {d.paused ? (
-        <p className="hint">Hush — the game is paused right now.</p>
-      ) : !connected ? (
+      {!connected ? (
         <div>
           <p className="hint">Connect your wallet to start raking.</p>
           <div className="buy-hint">
