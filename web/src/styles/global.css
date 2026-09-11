@@ -857,6 +857,27 @@ code.mono {
   gap: 7px;
 }
 
+.footer-social {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.footer-social a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ink-soft);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.footer-social a:hover {
+  color: var(--accent);
+}
+
 .audit-links {
   list-style: none;
   padding: 0;

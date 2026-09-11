@@ -55,6 +55,7 @@ export const GAME_ADDRESS = import.meta.env.VITE_RACKS_GAME;
 export const TOKEN_ADDRESS = import.meta.env.VITE_RACKS_TOKEN;
 
 // --- Public source & audit trail (github.com/Berageddon/racks) ---
+export const X_URL = "https://x.com/rhracks";
 export const GITHUB_REPO_URL = "https://github.com/Berageddon/racks";
 export const ADERYN_REPORT_URL = `${GITHUB_REPO_URL}/blob/master/audit/aderyn-report.md`;
 export const SLITHER_REPORT_URL = `${GITHUB_REPO_URL}/blob/master/audit/slither-report.md`;

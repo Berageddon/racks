@@ -1,8 +1,9 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
 import WalletButton from "./WalletButton";
 import GitHubIcon from "./GitHubIcon";
+import XIcon from "./XIcon";
 import { useBuy } from "./BuyModal";
-import { GITHUB_REPO_URL, ADERYN_REPORT_URL, SLITHER_REPORT_URL, AUDIT_CI_URL } from "../config";
+import { GITHUB_REPO_URL, ADERYN_REPORT_URL, SLITHER_REPORT_URL, AUDIT_CI_URL, X_URL } from "../config";
 
 export default function Layout() {
   const { openBuy } = useBuy();
@@ -50,6 +51,12 @@ export default function Layout() {
                 The last bid wins the racks. A community count-up auction for $RACKS on Robinhood
                 Chain.
               </p>
+              <div className="footer-social">
+                <a className="footer-icon-link" href={X_URL} target="_blank" rel="noreferrer" aria-label="RACKS on X">
+                  <XIcon size={15} />
+                  X
+                </a>
+              </div>
             </div>
             <div>
               <h4>Product</h4>
