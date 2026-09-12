@@ -93,6 +93,10 @@ export default {
       }
     }
 
+    if (url.pathname === "/api/" || url.pathname.startsWith("/api/")) {
+      return json({ error: "not_found" }, { status: 404, "Cache-Control": "no-store" });
+    }
+
     // Everything else ships the static app. The ASSETS binding serves real files;
     // anything unknown falls back to index.html so the SPA keeps working.
     if (env.ASSETS) {
