@@ -141,6 +141,17 @@ export default function Play() {
   );
 }
 
+const SIMULATION_HINT =
+  'Robinhood Chain is new, so your wallet may show "Simulation failed" before signing. The approval is verified on-chain and safe — tap "Proceed anyway" / "Sign" in your wallet to continue.';
+
+function friendlyTxError(e) {
+  const msg = e?.shortMessage || e?.message || "";
+  if (/simulat/i.test(msg) || /39000/.test(msg)) {
+    return "Simulation error: " + SIMULATION_HINT;
+  }
+  return msg || "Transaction failed";
+}
+
 function BidPanel({ d, connected, bellRang, waitingFirstBid, myClaim, claimLive }) {
   const [multiple, setMultiple] = useState(1);
   const [phase, setPhase] = useState("idle");
@@ -201,7 +212,7 @@ function BidPanel({ d, connected, bellRang, waitingFirstBid, myClaim, claimLive 
       setPhase("idle");
     } catch (e) {
       setPhase("idle");
-      setError(e?.shortMessage || e?.message || "Transaction failed");
+      setError(friendlyTxError(e));
     }
   };
 
@@ -289,6 +300,10 @@ function BidPanel({ d, connected, bellRang, waitingFirstBid, myClaim, claimLive 
               <div className="val">{formatRacks(bidAmount)} $RACKS</div>
             </span>
           </div>
+
+          {!approved && (
+            <p className="hint sim-hint">{SIMULATION_HINT}</p>
+          )}
 
           {approved ? (
             <button className="btn btn-primary" disabled={busy || !connected} onClick={() => setBid("bidding")}>

@@ -1536,6 +1536,15 @@ code.mono {
   color: var(--ink-soft);
 }
 
+.sim-hint {
+  border: 1px solid var(--line-accent);
+  background: var(--accent-soft);
+  color: var(--ink-soft);
+  border-radius: 10px;
+  padding: 9px 12px;
+  margin-bottom: 12px;
+}
+
 .buy-hint {
   display: flex;
   gap: 12px;
