@@ -37,7 +37,7 @@ export default function Layout() {
           <div className="header-cta">
             <button className="btn-buy" onClick={openBuy} aria-label="Buy RACKS">
               <span className="plus">+</span>
-              <span className="buy-word">Buy</span> RACKS
+              <span className="buy-text">Buy RACKS</span>
             </button>
             <WalletButton />
             <button
