@@ -1,0 +1,9 @@
+{
+  "network": "rhMainnet",
+  "chainId": 4663,
+  "racksGame": "0x92B0E6aAdeE33E559a0285e315d015Ab4793211C",
+  "token": "0xe88AC3eb472f7b6fe1e8Ae4fCb53dF48A731b352",
+  "devWallet": "0xe02Aee187eb7499939DBae444aa5C15F07838F93",
+  "tick": "10000",
+  "roundTime": "180"
+}

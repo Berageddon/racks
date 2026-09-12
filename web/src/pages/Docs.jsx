@@ -227,12 +227,16 @@ function Contract() {
             <tr>
               <td>Robinhood Chain</td>
               <td className="mono">4663</td>
-              <td className="mono">deployed-mainnet.json</td>
+              <td className="mono">
+                <a href="https://robinhoodchain.blockscout.com/address/0x92B0E6aAdeE33E559a0285e315d015Ab4793211C" target="_blank" rel="noreferrer">
+                  0x92B0E6aAdeE33E559a0285e315d015Ab4793211C
+                </a>
+              </td>
             </tr>
             <tr>
               <td>Robinhood Chain Testnet</td>
               <td className="mono">46630</td>
-              <td className="mono">deployed-testnet.json</td>
+              <td className="mono">pending</td>
             </tr>
           </tbody>
         </table>
