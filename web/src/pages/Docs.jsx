@@ -396,6 +396,14 @@ function Security() {
       <h2>Security</h2>
       <ul>
         <li>
+          <b>Verified &amp; published source.</b> The deployed bytecode matches its verified source
+          on Blockscout —{" "}
+          <a href="https://robinhoodchain.blockscout.com/address/0x92B0E6aAdeE33E559a0285e315d015Ab4793211C" target="_blank" rel="noreferrer">
+            0x92B0E6aAdeE33E559a0285e315d015Ab4793211C
+          </a>{" "}
+          — so anyone can cross-check the rules before playing.
+        </li>
+        <li>
           <b>Pull-based winner payouts.</b> Winners claim their 95% through <span className="mono">claim()</span>{" "}
           within a 1-hour window; the round always auto-advances, so the game never waits for a claim.
           All external calls are guarded by <span className="mono">ReentrancyGuard</span> and obey

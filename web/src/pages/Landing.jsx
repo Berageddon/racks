@@ -134,6 +134,14 @@ export default function Landing() {
               <a className="trust-item" href={SLITHER_REPORT_URL} target="_blank" rel="noreferrer">
                 Slither &#10003;
               </a>
+              <a
+                className="trust-item"
+                href="https://robinhoodchain.blockscout.com/address/0x92B0E6aAdeE33E559a0285e315d015Ab4793211C"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Contract verified &#10003;
+              </a>
               <span className="trust-item trust-note">static analysis passed</span>
               <span className="trust-item trust-note">rules can&apos;t change</span>
             </div>
