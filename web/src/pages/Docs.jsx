@@ -128,7 +128,7 @@ function Mechanics() {
   return (
     <section id="mechanics">
       <h2>Game mechanics</h2>
-      <p>All values are enforced by the contract and may be tuned by the owner before or between rounds.</p>
+      <p>All values are enforced by the contract and fixed at deployment.</p>
 
       <div className="table-wrap">
         <table className="doc">
@@ -153,17 +153,22 @@ function Mechanics() {
             <tr>
               <td className="mono">Winner take</td>
               <td>95%</td>
-              <td>Of the total pot at settlement, paid to the top bidder.</td>
+              <td>Of the pot at the bell, reserved for the top bidder and claimed by them within the claim window.</td>
+            </tr>
+            <tr>
+              <td className="mono">Claim window</td>
+              <td>1 hour</td>
+              <td>Winner must claim their 95% within one hour of the bell; otherwise it rolls into the next round's pot.</td>
             </tr>
             <tr>
               <td className="mono">Next-round reserve</td>
               <td>2.5%</td>
-              <td>Banked automatically and used to seed the following round's starting pot.</td>
+              <td>Banked automatically and used to seed the following round's starting pot the moment the bell drops.</td>
             </tr>
             <tr>
               <td className="mono">Treasury</td>
               <td>2.5%</td>
-              <td>Sent to the configured dev/treasury wallet.</td>
+              <td>Sent to the configured dev/treasury wallet when the winner claims; forfeited shares accumulate and are paid out with the next claim.</td>
             </tr>
             <tr>
               <td className="mono">Seed</td>
@@ -177,19 +182,21 @@ function Mechanics() {
       <h3>Round lifecycle</h3>
       <ol>
         <li>
-          <b>Open</b> — no bids yet. The pot may already contain the owner&apos;s seed. The first bid
-          must be at least one tick.
+          <b>Open</b> — no bids yet. The pot may already contain the owner&apos;s seed and the
+          countdown has not started. The first bid — at least one tick — starts the timer.
         </li>
         <li>
           <b>Live</b> — bids land, each beating the last by ≥ 1 tick, each resetting the 180s clock.
         </li>
         <li>
-          <b>Closed</b> — the clock expires. Anyone (including the winner) may call{" "}
-          <span className="mono">settle()</span> to finalize.
+          <b>Bell</b> — the clock expires. The round is decided instantly and the next round is
+          already live, seeded by the 2.5% reserve. There is nothing to settle.
         </li>
         <li>
-          <b>Settled</b> — the winner receives 95%, the treasury 2.5%, and 2.5% rolls into the next
-          round&apos;s pot automatically. A new round begins.
+          <b>Claim</b> — the winner calls <span className="mono">claim(round)</span> within one hour
+          to receive 95%. The treasury receives that round&apos;s 2.5% in the same transaction. If the
+          winner never claims, their 95% rolls into the next round&apos;s pot and the treasury share
+          is banked, then paid out on the next successful claim.
         </li>
       </ol>
     </section>
@@ -250,17 +257,32 @@ function Contract() {
             <tr>
               <td className="mono">bid(uint256 amount)</td>
               <td>Anyone</td>
-              <td>Pulls $RACKS via allowance, enforces tick + top-bid rules, resets the countdown.</td>
+              <td>Pulls $RACKS via allowance, enforces tick + top-bid rules, resets the countdown. After the bell it auto-orders the next round and lands as its first bid.</td>
             </tr>
             <tr>
-              <td className="mono">settle()</td>
-              <td>Anyone</td>
-              <td>After expiry, pays 95% winner / 2.5% treasury / 2.5% reserve and opens the next round.</td>
+              <td className="mono">claim(uint256 settledRound)</td>
+              <td>Winner only</td>
+              <td>Within 1 hour of the bell, pays the winner 95% and the treasury that round&apos;s 2.5%, including any forfeited shares banked from earlier rounds.</td>
+            </tr>
+            <tr>
+              <td className="mono">effectiveRound()</td>
+              <td>View</td>
+              <td>The live round number — advances automatically the moment the bell drops, no transaction needed.</td>
+            </tr>
+            <tr>
+              <td className="mono">effectivePotTotal()</td>
+              <td>View</td>
+              <td>The live round&apos;s pot, already seeded from the reserve and any forfeited winnings.</td>
+            </tr>
+            <tr>
+              <td className="mono">pendingClaimOf(address)</td>
+              <td>View</td>
+              <td>Returns any claim currently reserved for a wallet: round, amount, deadline, and whether it exists.</td>
             </tr>
             <tr>
               <td className="mono">timeRemaining()</td>
               <td>View</td>
-              <td>Seconds left in the current round.</td>
+              <td>Seconds left in the current round; the full round time while it awaits its first bid, 0 at the bell.</td>
             </tr>
             <tr>
               <td className="mono">isRoundLive()</td>
@@ -298,6 +320,8 @@ function Contract() {
         <div><span className="cmd">event</span> Bid(uint256 indexed round, address indexed bidder, uint256 amount, uint256 topBid, uint256 potTotal, uint256 roundEndsAt);</div>
         <div><span className="cmd">event</span> RoundStarted(uint256 indexed round, uint256 potTotal);</div>
         <div><span className="cmd">event</span> RoundSettled(uint256 indexed round, address indexed winner, uint256 potTotal, uint256 winnerAmount, uint256 devAmount, uint256 nextPot);</div>
+        <div><span className="cmd">event</span> WinnerClaimed(uint256 indexed round, address indexed winner, uint256 winnerAmount, uint256 devAmount);</div>
+        <div><span className="cmd">event</span> WinnerForfeited(uint256 indexed round, uint256 winnerAmount, uint256 devAmount);</div>
         <div><span className="cmd">event</span> Seeded(uint256 indexed round, uint256 amount, uint256 potTotal);</div>
       </div>
     </section>
@@ -368,8 +392,10 @@ function Security() {
       <h2>Security</h2>
       <ul>
         <li>
-          <b>Pull-based payouts.</b> <span className="mono">settle()</span> pays out by transfer and
-          respects checks-effects-interactions, guarded by <span className="mono">ReentrancyGuard</span>.
+          <b>Pull-based winner payouts.</b> Winners claim their 95% through <span className="mono">claim()</span>{" "}
+          within a 1-hour window; the round always auto-advances, so the game never waits for a claim.
+          All external calls are guarded by <span className="mono">ReentrancyGuard</span> and obey
+          checks-effects-interactions.
         </li>
         <li>
           <b>No minting.</b> The game only moves user-deposited $RACKS; it can never create tokens.
@@ -491,12 +517,20 @@ function Faq() {
       <h3>What happens if the round closes and no one wins?</h3>
       <p>
         A round without any bid is a non-starter: the seed stays in place and the first bid opens it
-        like normal. A round is only settled once at least one bid exists and the clock has expired.
+        and starts the countdown. A round only ever has a winner once at least one bid landed and the
+        clock expired.
+      </p>
+      <h3>What if the winner never claims?</h3>
+      <p>
+        After the 1-hour claim window closes, the winner&apos;s 95% is forfeited and rolls into the
+        next round&apos;s pot, while that round&apos;s 2.5% treasury share is banked and paid out on the
+        next successful claim. The game itself always keeps rolling — no claim ever blocks the next
+        round.
       </p>
       <h3>Can the owner take the pot?</h3>
       <p>
-        No. The owner cannot transfer $RACKS out of the contract except through the standard
-        settlement split. The only owner lever over the pot is seeding a fresh round.
+        No. The owner cannot transfer $RACKS out of the contract except as part of the scheduled
+        dev share. The only owner lever over the pot is seeding a fresh round.
       </p>
       <h3>Can I bid less than the top bid?</h3>
       <p>
@@ -510,8 +544,9 @@ function Faq() {
       </p>
       <h3>How does the next round get its seed?</h3>
       <p>
-        2.5% of every settled pot is banked as a reserve and automatically becomes the opening pot of
-        the following round. No manual feeding is required after launch.
+        2.5% of every pot is banked as a reserve and automatically becomes the opening pot of the
+        following round the moment the bell drops — plus any winnings forfeited by unclaimed prior
+        rounds. No manual feeding is required after launch.
       </p>
       <h3>What network do I use?</h3>
       <p>

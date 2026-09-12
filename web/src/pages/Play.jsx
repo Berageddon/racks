@@ -8,8 +8,9 @@ import { useBuy } from "../components/BuyModal";
 import ChatPanel from "../components/ChatPanel";
 
 const TICK_MULTIPLES = [1, 2, 5, 10, 25];
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
-function CountdownRing({ total, remaining, ready }) {
+function CountdownRing({ total, remaining, ready, awaiting }) {
   const R = 48;
   const CIRC = 2 * Math.PI * R;
   const r = ready && remaining != null ? remaining : 0;
@@ -20,6 +21,7 @@ function CountdownRing({ total, remaining, ready }) {
   const secs = r % 60;
   const time = ready ? `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}` : "—:—";
   const closed = ready && total > 0 && r === 0;
+  const caption = !ready ? "SYNCING" : awaiting ? "AWAITING" : closed ? "CLOSED" : low ? "FINAL" : "TO BELL";
 
   return (
     <div className={`ring ${low ? "low" : ""}`}>
@@ -40,20 +42,20 @@ function CountdownRing({ total, remaining, ready }) {
       <div className="ring-center">
         <div>
           <div className="ring-time">{time}</div>
-          <div className="ring-caption">{!ready ? "SYNCING" : closed ? "CLOSED" : low ? "FINAL" : "TO BELL"}</div>
+          <div className="ring-caption">{caption}</div>
         </div>
       </div>
     </div>
   );
 }
 
-function WinBanner({ winner, round }) {
+function WinBanner({ round }) {
   return (
     <div className="win-banner">
-      <h3>Round {round?.toString()} close</h3>
+      <h3>Bell dropped</h3>
       <p>
-        <span className="mono">{shortAddr(winner)}</span> takes 95% of the pot. The next round
-        auto-seeds from the 2.5% reserve.
+        Round {round?.toString()} is closed and the next pot is live off the 2.5% reserve. The
+        winner has 1 hour to claim 95% of that pot — unclaimed winnings roll into the next round.
       </p>
     </div>
   );
@@ -64,11 +66,21 @@ export default function Play() {
   const d = useGameData();
   const { remaining, ready } = useCountdown(d.timeRemaining);
 
-  const hasBids = d.topBidder && d.topBidder !== "0x0000000000000000000000000000000000000000";
-  const roundOver = hasBids && ready && remaining === 0;
+  const hasBids = d.topBidder && d.topBidder !== ZERO_ADDRESS;
   const waitingFirstBid = !hasBids;
-  const status = waitingFirstBid ? "idle" : roundOver ? "over" : "live";
-  const label = d.loading ? "Loading…" : waitingFirstBid ? "Awaiting first rack" : roundOver ? "Round settled" : "Live round";
+  const bellRang = waitingFirstBid && ready && remaining === 0;
+  const closedRound = d.round && d.round > 1n ? d.round - 1n : d.round;
+
+  const myClaim = d.pendingClaim;
+  const claimLive = myClaim && Date.now() / 1000 < Number(myClaim.deadline);
+
+  const pill = claimLive
+    ? { status: "won", label: "You won — claim!" }
+    : d.loading
+    ? { status: "idle", label: "Loading…" }
+    : waitingFirstBid
+    ? { status: "idle", label: bellRang ? "Round settled" : "Awaiting first rack" }
+    : { status: "live", label: "Live round" };
 
   return (
     <div className="play-layout">
@@ -83,7 +95,7 @@ export default function Play() {
         <section className="game-card hero-card">
           <div className="gc-head">
             <span className="round-no mono">ROUND #{d.round?.toString() ?? "—"}</span>
-            <span className={`pill ${status}`}>{label}</span>
+            <span className={`pill ${pill.status}`}>{pill.label}</span>
           </div>
 
           <div className="pot-stage">
@@ -92,13 +104,18 @@ export default function Play() {
               <div className="pot-value">{formatRacks(d.potTotal)}</div>
               <div className="pot-unit">$RACKS</div>
             </div>
-            <CountdownRing total={d.roundTime ? Number(d.roundTime) : 0} remaining={remaining} ready={ready} />
+            <CountdownRing
+              total={d.roundTime ? Number(d.roundTime) : 0}
+              remaining={remaining}
+              ready={ready}
+              awaiting={waitingFirstBid && !bellRang}
+            />
           </div>
 
           <div className="top-wrap">
             <div className="card-soft pc-stat">
               <div className="lbl">Top rack</div>
-              <div className="val">{formatRacks(d.topBid)} $RACKS</div>
+              <div className="val">{waitingFirstBid ? "—" : `${formatRacks(d.topBid)} $RACKS`}</div>
             </div>
             <div className="card-soft pc-stat">
               <div className="lbl">Top racker</div>
@@ -106,10 +123,17 @@ export default function Play() {
             </div>
           </div>
 
-          {roundOver && <WinBanner winner={d.topBidder} round={d.round} />}
+          {bellRang && <WinBanner round={closedRound} />}
         </section>
 
-        <BidPanel d={d} connected={isConnected} roundOver={roundOver} waitingFirstBid={waitingFirstBid} />
+        <BidPanel
+          d={d}
+          connected={isConnected}
+          bellRang={bellRang}
+          waitingFirstBid={waitingFirstBid}
+          myClaim={myClaim}
+          claimLive={claimLive}
+        />
         <BidFeed d={d} waitingFirstBid={waitingFirstBid} />
         <ChatPanel />
       </div>
@@ -117,7 +141,7 @@ export default function Play() {
   );
 }
 
-function BidPanel({ d, connected, roundOver, waitingFirstBid }) {
+function BidPanel({ d, connected, bellRang, waitingFirstBid, myClaim, claimLive }) {
   const [multiple, setMultiple] = useState(1);
   const [phase, setPhase] = useState("idle");
   const [error, setError] = useState(null);
@@ -125,6 +149,7 @@ function BidPanel({ d, connected, roundOver, waitingFirstBid }) {
   const { openBuy } = useBuy();
   const chainId = d.target.id;
 
+  const busy = phase !== "idle";
   const tick = d.tick || 0n;
   const topBid = d.topBid || 0n;
   const bidAmount = topBid + tick * BigInt(multiple);
@@ -163,13 +188,13 @@ function BidPanel({ d, connected, roundOver, waitingFirstBid }) {
             args: [bidAmount],
           });
           break;
-        case "settle":
+        case "claiming":
           await writeContractAsync({
             chainId,
             address: GAME_ADDRESS,
             abi: RacksGameABI,
-            functionName: "settle",
-            args: [],
+            functionName: "claim",
+            args: [myClaim.round],
           });
           break;
       }
@@ -180,17 +205,33 @@ function BidPanel({ d, connected, roundOver, waitingFirstBid }) {
     }
   };
 
-  const busy = phase !== "idle";
-
   return (
     <section className="game-card">
-      <h2 className="gc-title">{roundOver ? "Settle the round" : "Rack in"}</h2>
+      <h2 className="gc-title">{claimLive ? "Claim your win" : "Rack in"}</h2>
 
       {error && <div className="error">{error}</div>}
 
+      {claimLive && (
+        <div className="claim-box">
+          <div className="claim-amount">
+            <div className="lbl">Your winnings · round #{myClaim.round?.toString()}</div>
+            <div className="val">{formatRacks(myClaim.amount)} $RACKS</div>
+          </div>
+          <button className="btn btn-primary" disabled={busy || !connected} onClick={() => setBid("claiming")}>
+            {busy ? "Claiming…" : "CLAIM YOUR $RACKS"}
+          </button>
+          <p className="hint">
+            Winners can claim within 1 hour of the bell. Unclaimed winnings roll into the next
+            round&apos;s pot.
+          </p>
+        </div>
+      )}
+
       {!connected ? (
         <div>
-          <p className="hint">Connect your wallet to start raking.</p>
+          <p className="hint">
+            {claimLive ? "Connect your wallet to claim your winnings." : "Connect your wallet to start raking."}
+          </p>
           <div className="buy-hint">
             <button className="btn btn-primary" onClick={openBuy}>
               Buy $RACKS
@@ -205,7 +246,7 @@ function BidPanel({ d, connected, roundOver, waitingFirstBid }) {
       ) : walletLow ? (
         <div>
           <p className="hint">
-            Balance too low. You have <span className="mono">{formatRacks(d.balance)} $RACKS</span> — grab
+            Balance too low to bid. You have <span className="mono">{formatRacks(d.balance)} $RACKS</span> — grab
             more, then rack in.
           </p>
           <div className="buy-hint">
@@ -215,12 +256,21 @@ function BidPanel({ d, connected, roundOver, waitingFirstBid }) {
             <span className="hint">Bridge ETH for gas on Robinhood Chain first.</span>
           </div>
         </div>
-      ) : roundOver ? (
-        <button className="btn btn-primary" disabled={busy} onClick={() => setBid("settle")}>
-          {busy ? "Settling…" : "Settle the bell"}
-        </button>
       ) : (
         <>
+          {claimLive && (
+            <p className="hint">
+              Claimed? You can still rack into the live round below.
+            </p>
+          )}
+          {waitingFirstBid && (
+            <p className="hint">
+              {bellRang
+                ? "New round is live — the first bid starts the countdown."
+                : "Place the first bid to start the countdown."}
+            </p>
+          )}
+
           <div className="ticks">
             {TICK_MULTIPLES.map((m) => (
               <button

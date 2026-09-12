@@ -21,6 +21,8 @@
   --accent-soft: rgba(204, 255, 0, 0.09);
   --accent-ink: #0a0c08;
   --accent-hover: #b8e600;
+  --gold: #ffc850;
+  --gold-soft: rgba(255, 200, 80, 0.1);
   --danger: #ff6464;
   --danger-soft: rgba(255, 100, 100, 0.1);
   --radius: 14px;
@@ -710,6 +712,12 @@ a.trust-item:hover {
   background: var(--panel-2);
   border: 1px solid var(--line-strong);
   color: var(--muted);
+}
+
+.pill.won {
+  background: var(--gold-soft);
+  border: 1px solid rgba(255, 200, 80, 0.4);
+  color: var(--gold);
 }
 
 .pot-card .pc-body {
@@ -1532,6 +1540,39 @@ code.mono {
   font-weight: 600;
   letter-spacing: 0.08em;
   color: var(--faint);
+}
+
+.claim-box {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--gold-soft);
+  border: 1px solid rgba(255, 200, 80, 0.35);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.claim-amount {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.claim-amount .lbl,
+.next-bid .lbl {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.claim-amount .val {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 20px;
+  color: var(--gold);
 }
 
 /* feed */

@@ -6,7 +6,7 @@ import { formatRacks, shortAddr, GITHUB_REPO_URL, ADERYN_REPORT_URL, SLITHER_REP
 import { TOKEN_CA, SWAP_LINKS } from "../token";
 import { useTokenStats } from "../tokenStats";
 
-function CountdownRing({ total, remaining, ready }) {
+function CountdownRing({ total, remaining, ready, awaiting }) {
   const R = 48;
   const CIRC = 2 * Math.PI * R;
   const r = ready && remaining != null ? remaining : 0;
@@ -16,6 +16,7 @@ function CountdownRing({ total, remaining, ready }) {
   const mins = Math.floor(r / 60);
   const secs = r % 60;
   const time = ready ? `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}` : "—:—";
+  const caption = !ready ? "SYNCING" : awaiting ? "AWAITING" : r === 0 && total > 0 ? "CLOSED" : low ? "FINAL" : "TO BELL";
 
   return (
     <div className={`ring ${low ? "low" : ""}`}>
@@ -36,7 +37,7 @@ function CountdownRing({ total, remaining, ready }) {
       <div className="ring-center">
         <div>
           <div className="ring-time">{time}</div>
-          <div className="ring-caption">{!ready ? "SYNCING" : r === 0 && total > 0 ? "CLOSED" : low ? "FINAL" : "TO BELL"}</div>
+          <div className="ring-caption">{caption}</div>
         </div>
       </div>
     </div>
@@ -47,8 +48,15 @@ function PotPreview() {
   const d = useGameData();
   const { remaining, ready } = useCountdown(d.timeRemaining);
   const hasBids = d.topBidder && d.topBidder !== "0x0000000000000000000000000000000000000000";
-  const status = !hasBids ? "idle" : ready && remaining === 0 ? "over" : "live";
-  const label = d.loading ? "…" : !hasBids ? "Awaiting first rack" : ready && remaining === 0 ? "Round settled" : "Live round";
+  const bellRang = !hasBids && ready && remaining === 0;
+  const label = d.loading
+    ? "…"
+    : !hasBids
+    ? bellRang
+      ? "Round settled"
+      : "Awaiting first rack"
+    : "Live round";
+  const status = !hasBids ? "idle" : "live";
 
   return (
     <div className="pot-card">
@@ -62,12 +70,17 @@ function PotPreview() {
           <div className="pot-value">{formatRacks(d.potTotal)}</div>
           <div className="pot-unit">$RACKS</div>
         </div>
-        <CountdownRing total={d.roundTime ? Number(d.roundTime) : 0} remaining={remaining} ready={ready} />
+        <CountdownRing
+          total={d.roundTime ? Number(d.roundTime) : 0}
+          remaining={remaining}
+          ready={ready}
+          awaiting={!hasBids && !bellRang}
+        />
       </div>
       <div className="pc-stats">
         <div className="pc-stat">
           <div className="lbl">Top rack</div>
-          <div className="val">{(d.topBid && formatRacks(d.topBid)) || "—"}</div>
+          <div className="val">{(hasBids && d.topBid && formatRacks(d.topBid)) || "—"}</div>
         </div>
         <div className="pc-stat">
           <div className="lbl">Top racker</div>
@@ -95,7 +108,8 @@ export default function Landing() {
             </h1>
             <p className="lead">
               RACKS is a community count-up auction for $RACKS. Everyone racks in, every bid resets
-              the clock, and when the bell drops, the top racker takes 95% of the pot.
+              the clock, and when the bell drops the top racker takes 95% of the pot — claim it
+              within the hour, and the game rolls on automatically.
             </p>
             <div className="hero-cta">
               <Link className="btn btn-primary btn-lg" to="/play">
@@ -164,7 +178,7 @@ export default function Landing() {
             <div className="step">
               <div className="step-num">3</div>
               <h3>Take the pot</h3>
-              <p>When the clock hits zero, the current top racker wins 95% of the entire pot. On-chain. Permissionless.</p>
+              <p>When the clock hits zero the top racker wins 95% — the round auto-advances, and the winner claims their rack within one hour. On-chain. Permissionless.</p>
             </div>
           </div>
         </div>
@@ -180,8 +194,9 @@ export default function Landing() {
             <h2 style={{ marginBottom: 16 }}>Rules are simple, funds are automatic.</h2>
             <p className="lead" style={{ fontSize: 16 }}>
               Each bid must beat the top rack by at least 10,000 $RACKS, the clock resets to 180
-              seconds on every bid, and the split is 95 / 2.5 / 2.5 at the bell. No manual refills needed —
-              2.5% of every settled pot automatically seeds the round that follows.
+              seconds on every bid, and the split is 95 / 2.5 / 2.5 at the bell. No manual refills
+              and no waiting for someone to settle — 2.5% of every pot automatically seeds the round
+              that follows the moment the bell drops.
             </p>
           </div>
 <div className="grid cols-3" style={{ marginTop: 32 }}>
@@ -200,10 +215,10 @@ export default function Landing() {
                 </p>
               </div>
               <div className="card card-soft">
-                <div className="stat-label">Settlement</div>
+                <div className="stat-label">Payout</div>
                 <div className="stat-value">95 / 2.5 / 2.5</div>
                 <p style={{ color: "var(--muted)", fontSize: 14, marginTop: 6 }}>
-                  Winner takes 95%, 2.5% seeds next, 2.5% treasury.
+                  Winner claims 95% within 1 hour, 2.5% auto-seeds the next round, 2.5% treasury.
                 </p>
               </div>
             </div>

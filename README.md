@@ -34,7 +34,7 @@ Automated static analysis runs on every push (GitHub Actions, `.github/workflows
 
 - **Slither** (Trail of Bits) and **Cyfrin Aderyn**: zero high/medium/low findings.
 - Remaining informationals were adjudicated (false positives or by design):
-  - locked-ether / reentrancy — false positives; `receive()` reverts and `settle()` is `nonReentrant` with state committed before payouts.
+  - locked-ether / reentrancy — false positives; `receive()` reverts and `claim()`/`bid()` are `nonReentrant` with state committed before payouts.
   - centralization — by design (`onlyOwner` controls, listed under Owner settings); the winner payout split (95 / 2.5 / 2.5) is enforced on-chain.
   - timestamp / large literals — inherent auction clock / cosmetic.
 - Reports: [`audit/slither-report.md`](audit/slither-report.md) · [`audit/aderyn-report.md`](audit/aderyn-report.md)
@@ -47,8 +47,8 @@ This is automated static analysis, not a substitute for a human audit.
 - Pot starts seeded by the owner (owner `seed()` when no bids).
 - A bid must be a **whole multiple of `tick`** (10k $RACKS) and **≥ top bid + 1 tick**.
 - Each bid resets a **180s** countdown.
-- Timer expiry → anyone calls `settle()` → winner gets 95%, next-round pot gets 2.5%, dev gets 2.5%.
-- Next round starts auto-seeded from the reserve; no manual feeding.
+- Timer expiry → the round is decided instantly: winner gets 95% (claimed within 1 hour), next-round pot gets 2.5%, dev gets 2.5%. No permissioned `settle()` and nothing left waiting — the next round is live the moment the bell drops.
+- Next round starts auto-seeded from the reserve; no manual feeding. Unclaimed winnings roll into the next round after 1 hour.
 
 ## Smart contract
 

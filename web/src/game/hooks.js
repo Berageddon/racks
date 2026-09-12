@@ -14,15 +14,29 @@ export function useGameData() {
   // Poll every 5s so the game state (pot, top bid, clock) tracks the chain live.
   const commonQuery = { enabled: !!GAME_ADDRESS, refetchInterval: 5000 };
 
-  const round = useReadContract({ ...common, functionName: "round", query: commonQuery });
-  const potTotal = useReadContract({ ...common, functionName: "potTotal", query: commonQuery });
-  const topBid = useReadContract({ ...common, functionName: "topBid", query: commonQuery });
-  const topBidder = useReadContract({ ...common, functionName: "topBidder", query: commonQuery });
-  const roundEndsAt = useReadContract({ ...common, functionName: "roundEndsAt", query: commonQuery });
+  // The game auto-advances the moment a round's countdown expires, so we read the
+  // derived "effective" views that reflect the live round without needing a tx.
+  const round = useReadContract({ ...common, functionName: "effectiveRound", query: commonQuery });
+  const potTotal = useReadContract({ ...common, functionName: "effectivePotTotal", query: commonQuery });
+  const topBid = useReadContract({ ...common, functionName: "effectiveTopBid", query: commonQuery });
+  const topBidder = useReadContract({ ...common, functionName: "effectiveTopBidder", query: commonQuery });
   const tick = useReadContract({ ...common, functionName: "tick", query: commonQuery });
   const roundTime = useReadContract({ ...common, functionName: "roundTime", query: commonQuery });
   const devWallet = useReadContract({ ...common, functionName: "devWallet", query: commonQuery });
   const timeRemaining = useReadContract({ ...common, functionName: "timeRemaining", query: commonQuery });
+
+  // A reserved payout for the connected wallet if it won a settled round.
+  const pendingClaimOf = useReadContract({
+    ...common,
+    functionName: "pendingClaimOf",
+    args: address ? [address] : undefined,
+    query: { enabled: !!GAME_ADDRESS && !!address, refetchInterval: 5000 },
+  });
+  const rawClaim = pendingClaimOf.data;
+  const pendingClaim =
+    rawClaim && rawClaim[3]
+      ? { round: rawClaim[0], amount: rawClaim[1], deadline: rawClaim[2] }
+      : null;
 
   const tokenCommon = { address: TOKEN_ADDRESS, abi: erc20Abi, chainId: target.id };
   const balance = useReadContract({
@@ -47,11 +61,11 @@ export function useGameData() {
     potTotal: potTotal.data,
     topBid: topBid.data,
     topBidder: topBidder.data,
-    roundEndsAt: roundEndsAt.data,
     tick: tick.data,
     roundTime: roundTime.data,
     devWallet: devWallet.data,
     timeRemaining: timeRemaining.data,
+    pendingClaim,
     balance: balance.data,
     allowance: allowance.data,
     loading: round.isPending || potTotal.isPending || timeRemaining.isPending,
@@ -62,8 +76,9 @@ export function useGameData() {
 export function useCountdown(timeRemaining) {
   const [, setTick] = useState(0);
   // Anchor the chain value to the moment we observed it; re-anchor whenever the
-  // contract reports a new value (e.g. a bid resets it to 180, or a settle toggles
-  // to the next round's countdown). The 1s interval only drives re-renders.
+  // contract reports a new value (e.g. a bid resets it to 180, or the bell drops it
+  // to 0 while views auto-advance to the next round). The 1s interval only drives
+  // re-renders.
   const [anchor, setAnchor] = useState(null);
   const raw = timeRemaining != null ? Number(timeRemaining) : null;
 

@@ -9,11 +9,12 @@ Automated static analysis of **`contracts/RacksGame.sol`**, generated with
 > centralization note, and L-2 is **cosmetic**. Each finding is adjudicated below,
 > and the unmodified tool output is reproduced at the end for full transparency.
 >
-> The report was re-validated against the **final contract**, in which the admin
-> setters (`setTick`, `setRoundTime`, `setDevWallet`) and pause controls were removed
-> and `tick` / `roundTime` / `devWallet` are **immutable**. The owner surface now holds
-> exactly two functions (`seed`, `rescueTokens`); Aderyn lists 3 centralization
-> instances (the contract-level `Ownable` plus those two functions), down from 8.
+> The report was re-validated against the **current contract**, in which the admin
+> setters (`setTick`, `setRoundTime`, `setDevWallet`) and pause controls were removed,
+> `tick` / `roundTime` / `devWallet` are **immutable**, and the payout model is winner
+> pull-based (`claim`) with automatic round advance. The owner surface now holds exactly
+> two functions (`seed`, `rescueTokens`); Aderyn lists 3 centralization instances (the
+> contract-level `Ownable` plus those two functions), down from 8.
 
 This is automated scanning, **not a substitute for a professional human audit.** The
 open-source contract remains freely reviewable:
@@ -24,9 +25,9 @@ https://github.com/Berageddon/racks
 | Item | Value |
 | --- | --- |
 | Tool | Aderyn v0.6.8 (Cyfrin) |
-| Target | `contracts/RacksGame.sol` (121 nSLOC) |
+| Target | `contracts/RacksGame.sol` (206 nSLOC) |
 | Excluded | `contracts/mocks/` |
-| Companion tests | 21 behavioral tests in `test/RacksGame.js` (Hardhat) |
+| Companion tests | 24 behavioral tests in `test/RacksGame.js` (Hardhat) |
 | Related report | [`slither-report.md`](slither-report.md) |
 
 ## Summary
@@ -49,25 +50,28 @@ because the only receive path reverts at the EVM level.
 ### H-2 — Reentrancy: state change after external call — FALSE POSITIVE
 
 The flagged "external call" is `racks.balanceOf(address(this))` — a **read-only**
-view call used to measure the pot. The settle path:
+view call used to measure the amounts actually received. The write paths
+(`bid`, `claim`, and the internal round transition / forfeiture sweep):
 
-1. is guarded by `nonReentrant` (OpenZeppelin `ReentrancyGuard`);
-2. updates all state (`round`, `potTotal`, `topBid`, `topBidder`, `roundEndsAt`)
-   **before** any value-moving call (checks-effects-interactions);
-3. only then performs the payout `safeTransfer`s.
+1. are guarded by `nonReentrant` (OpenZeppelin `ReentrancyGuard`);
+2. update all state (`round`, `potTotal`, `topBid`, `topBidder`, `roundEndsAt`,
+   the per-round pending maps, `futureSeed`, `devAccum`) **before** any value-moving
+   call (checks-effects-interactions);
+3. only then perform the payout `safeTransfer`s (winner claim → `safeTransfer` to the
+   winner and the dev wallet).
 
 The heuristic flags *any* external call followed by a state write, but the actual
 execution order plus the reentrancy guard make re-entry impossible.
 
 ### L-1 — Centralization risk — BY DESIGN (documented)
 
-The owner can configure the tick, countdown, dev wallet, pause/unpause, seed
-rounds, and rescue stray tokens (OpenZeppelin `Ownable`). This is disclosed in the
-project docs. Constraints that limit the risk:
+The owner can seed rounds and rescue stray tokens (OpenZeppelin `Ownable`). This is
+disclosed in the project docs. Constraints that limit the risk:
 
 - the owner **cannot mint or drain the game token** — `rescueTokens` refuses `racks`;
 - the 95 / 2.5 / 2.5 payout split is enforced on-chain and can't be changed;
-- the timer and payout (`settle`) are **permissionless** — anyone can settle.
+- the game runs itself — rounds advance automatically at the bell and winners pull their
+  95% via `claim()` within 1 hour; there is no permissioned `settle()` step.
 
 ### L-2 — Large numeric literals — COSMETIC
 
@@ -76,10 +80,13 @@ impact.
 
 ---
 
-## Raw tool output (re-run against the final contract)
+## Raw tool output (latest archived CI run)
 
-The Aderyn output is reproduced below, with line references updated to the final
-immutable contract, for transparency alongside the adjudication above.
+The Aderyn output is reproduced below **verbatim** from the latest archived CI run, for
+transparency alongside the adjudication above. Aderyn re-runs on every push in public CI
+(see the badge at the top of [README.md](../README.md)); archived captures can drift from
+the very latest commit, and the adjudication on this page reflects the current
+claim + auto-advance contract.
 
 # Table of Contents
 
