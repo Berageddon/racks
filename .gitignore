@@ -4,4 +4,5 @@ artifacts/
 cache/
 .env
 .env.*
+!web/.env.production
 web/dev.log
