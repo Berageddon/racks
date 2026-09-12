@@ -32,9 +32,12 @@ export function parsePons(html) {
 }
 
 function json(body, extraHeaders = {}) {
-  return new Response(JSON.stringify(body), {
-    headers: { "Content-Type": "application/json", ...extraHeaders },
-  });
+  const { status = 200 } = extraHeaders;
+  const headers = { "Content-Type": "application/json" };
+  for (const [k, v] of Object.entries(extraHeaders)) {
+    if (k !== "status") headers[k] = v;
+  }
+  return new Response(JSON.stringify(body), { status, headers });
 }
 
 async function fetchFresh() {
