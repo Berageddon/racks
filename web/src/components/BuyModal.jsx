@@ -82,7 +82,7 @@ function BuyModal({ open, onClose }) {
         </div>
 
         <div className="modal-foot">
-          Live figures straight from the chain and the AMM pool. Bridge ETH for gas, then swap.
+          Live figures straight from the chain and the pons launchpad pool. Bridge ETH for gas, then swap.
           Always confirm the contract address above against the official listing.
         </div>
       </div>

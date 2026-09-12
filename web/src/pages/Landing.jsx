@@ -283,7 +283,7 @@ export default function Landing() {
                 ))}
               </div>
               <p style={{ color: "var(--faint)", fontSize: 13, marginTop: 14 }}>
-                Live figures straight from the chain and the AMM pool. Verify the contract address before any trade.
+                Live figures straight from the chain and the pons launchpad pool. Verify the contract address before any trade.
               </p>
               <Link className="btn btn-outline btn-sm" to="/docs" style={{ marginTop: 12 }}>
                 Contract docs
