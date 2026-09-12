@@ -1,12 +1,10 @@
-import { defineChain, http, fallback } from "viem";
+import { defineChain, http } from "viem";
 import { getDefaultConfig } from "@rainbow-me/rainbowkit";
 
-// Robinhood Chain RPCs.
-// NOTE: the official public RPC (rpc.mainnet.chain.robinhood.com) returns an
-// invalid `access-control-allow-origin: *,*` header, which Chromium rejects —
-// breaking EVERY in-browser read. PublicNode mirrors the chain and is
-// CORS-clean, so it's the primary; the official RPC is kept as a viem
-// `fallback()` failover for resilience.
+// Robinhood Chain RPCs, used only as chain metadata (explorer/etc.).
+// In-browser requests NEVER hit these directly: the upstream RPCs were
+// intermittently 403-ing browser requests, so all chain reads are proxied
+// same-origin through our worker's /rpc endpoint (?chain=<id>).
 const RH_MAINNET_RPCS = ["https://robinhood-rpc.publicnode.com", "https://rpc.mainnet.chain.robinhood.com"];
 
 // Robinhood Chain (mainnet, chain id 4663)
@@ -44,8 +42,8 @@ export const wagmiConfig = getDefaultConfig({
   projectId,
   chains: [robinhoodChain, robinhoodChainTestnet],
   transports: {
-    [robinhoodChain.id]: fallback([http(RH_MAINNET_RPCS[0], { batch: true }), http(RH_MAINNET_RPCS[1], { batch: true })]),
-    [robinhoodChainTestnet.id]: http("https://rpc.testnet.chain.robinhood.com", { batch: true }),
+    [robinhoodChain.id]: http("/rpc?chain=4663", { batch: true }),
+    [robinhoodChainTestnet.id]: http("/rpc?chain=46630", { batch: true }),
   },
   ssr: false,
 });

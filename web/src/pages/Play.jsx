@@ -161,9 +161,12 @@ function BidPanel({ d, connected, bellRang, waitingFirstBid, myClaim, claimLive 
   const chainId = d.target.id;
 
   const busy = phase !== "idle";
-  const tick = d.tick || 0n;
   const topBid = d.topBid || 0n;
-  const bidAmount = topBid + tick * BigInt(multiple);
+  // Contract tick is 10_000 wei (~1e-14 $RACKS), which is below display precision,
+  // so we step the multiplier in whole $RACKS (any whole-token amount is a valid
+  // multiple of the contract tick).
+  const STEP = 10n ** 18n;
+  const bidAmount = topBid + STEP * BigInt(multiple);
   const approved = d.allowance && d.allowance >= bidAmount;
   const wrongChain = connected && !d.isOnTargetChain;
   const walletLow = d.balance && d.balance < bidAmount;
@@ -280,6 +283,15 @@ function BidPanel({ d, connected, bellRang, waitingFirstBid, myClaim, claimLive 
                 ? "New round is live — the first bid starts the countdown."
                 : "Place the first bid to start the countdown."}
             </p>
+          )}
+
+          {d.balance != null && (
+            <div className="next-bid">
+              <span>
+                <div className="lbl">Your balance</div>
+                <div className="val">{formatRacks(d.balance)} $RACKS</div>
+              </span>
+            </div>
           )}
 
           <div className="ticks">

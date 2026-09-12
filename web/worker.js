@@ -6,6 +6,21 @@ const CACHE_TTL_MS = 30_000;
 const BROWSER_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
+// Chain reads are proxied through /rpc so the browser never hits the upstream RPC
+// directly (PublicNode was 403-ing CORS-flavoured browser requests). The worker
+// picks the upstream by ?chain= — same body is forwarded verbatim.
+const RPC_UPSTREAMS = {
+  "4663": "https://robinhood-rpc.publicnode.com",
+  "46630": "https://rpc.testnet.chain.robinhood.com",
+};
+
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Max-Age": "86400",
+};
+
 function dtValue(html, open) {
   const i = html.indexOf(open);
   if (i === -1) return null;
@@ -98,6 +113,48 @@ export default {
 
     if (url.pathname === "/api/" || url.pathname.startsWith("/api/")) {
       return json({ error: "not_found" }, { status: 404, "Cache-Control": "no-store" });
+    }
+
+    // JSON-RPC proxy: forward the whole body to the chain RPC selected by ?chain=.
+    if (url.pathname === "/rpc") {
+      if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
+      if (request.method !== "POST") {
+        return new Response('{"error":"method_not_allowed"}', {
+          status: 405,
+          headers: { ...CORS, "Content-Type": "application/json" },
+        });
+      }
+      const upstream = RPC_UPSTREAMS[url.searchParams.get("chain") || "4663"];
+      if (!upstream) {
+        return new Response('{"error":"bad_chain"}', {
+          status: 400,
+          headers: { ...CORS, "Content-Type": "application/json" },
+        });
+      }
+      try {
+        const rpcRes = await fetch(upstream, {
+          method: "POST",
+          headers: {
+            "Content-Type": request.headers.get("Content-Type") || "application/json",
+            Accept: "application/json",
+          },
+          body: request.body,
+        });
+        const body = await rpcRes.arrayBuffer();
+        return new Response(body, {
+          status: rpcRes.status,
+          headers: {
+            ...CORS,
+            "Content-Type": rpcRes.headers.get("Content-Type") || "application/json",
+            "Cache-Control": "no-store",
+          },
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: "rpc_upstream_failed", message: String((err && err.message) || err) }), {
+          status: 502,
+          headers: { ...CORS, "Content-Type": "application/json", "Cache-Control": "no-store" },
+        });
+      }
     }
 
     // Everything else ships the static app. The ASSETS binding serves real files;
