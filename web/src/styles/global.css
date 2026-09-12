@@ -1558,6 +1558,21 @@ code.mono {
   font-family: var(--font-mono);
 }
 
+@media (max-width: 560px) {
+  .game-card .btn {
+    width: 100%;
+    white-space: normal;
+    line-height: 1.35;
+  }
+}
+
+@media (max-width: 420px) {
+  .step-note {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+}
+
 .error {
   background: var(--danger-soft);
   border: 1px solid rgba(255, 100, 100, 0.3);
