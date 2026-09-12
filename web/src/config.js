@@ -42,8 +42,8 @@ export const wagmiConfig = getDefaultConfig({
   projectId,
   chains: [robinhoodChain, robinhoodChainTestnet],
   transports: {
-    [robinhoodChain.id]: http("/rpc?chain=4663", { batch: true, retryCount: 2, timeout: 15000 }),
-    [robinhoodChainTestnet.id]: http("/rpc?chain=46630", { batch: true, retryCount: 2, timeout: 15000 }),
+    [robinhoodChain.id]: http("/rpc?chain=4663", { batch: true, retryCount: 0, timeout: 15000 }),
+    [robinhoodChainTestnet.id]: http("/rpc?chain=46630", { batch: true, retryCount: 0, timeout: 15000 }),
   },
   ssr: false,
 });

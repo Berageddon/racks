@@ -14,8 +14,8 @@ export function useGameData() {
   // Poll every 12s so the game state (pot, top bid, clock) tracks the chain live —
   // frequent enough for a 3-minute round, slow enough to stay under the edge rate
   // limits that caused 403/429s on /rpc.
-  const commonQuery = { enabled: !!GAME_ADDRESS, refetchInterval: 12000 };
-  const rawQuery = { enabled: !!GAME_ADDRESS, refetchInterval: 20000 };
+  const commonQuery = { enabled: !!GAME_ADDRESS, refetchInterval: 12000, retry: false };
+  const rawQuery = { enabled: !!GAME_ADDRESS, refetchInterval: 26000, retry: false };
 
   // The game auto-advances the moment a round's countdown expires, so we read the
   // derived "effective" views that reflect the live round without needing a tx.
@@ -41,7 +41,7 @@ export function useGameData() {
     ...common,
     functionName: "pendingClaimOf",
     args: address ? [address] : undefined,
-    query: { enabled: !!GAME_ADDRESS && !!address, refetchInterval: 20000 },
+    query: { enabled: !!GAME_ADDRESS && !!address, refetchInterval: 20000, retry: false },
   });
   const rawClaim = pendingClaimOf.data;
   const pendingClaim =
@@ -54,13 +54,13 @@ export function useGameData() {
     ...tokenCommon,
     functionName: "balanceOf",
     args: address ? [address] : undefined,
-    query: { enabled: !!address && !!TOKEN_ADDRESS, refetchInterval: 20000 },
+    query: { enabled: !!address && !!TOKEN_ADDRESS, refetchInterval: 20000, retry: false },
   });
   const allowance = useReadContract({
     ...tokenCommon,
     functionName: "allowance",
     args: address ? [address, GAME_ADDRESS] : undefined,
-    query: { enabled: !!address && !!GAME_ADDRESS && !!TOKEN_ADDRESS, refetchInterval: 20000 },
+    query: { enabled: !!address && !!GAME_ADDRESS && !!TOKEN_ADDRESS, refetchInterval: 20000, retry: false },
   });
 
   return {
@@ -135,16 +135,18 @@ export function useBidFeed(target) {
   useEffect(() => {
     if (!publicClient || !GAME_ADDRESS) return;
     let cancelled = false;
+    let lastFromBlock = 0n;
     const fetchAll = async () => {
       try {
         if (document.visibilityState === "hidden") return;
-        const latest = await publicClient.getBlockNumber();
-        const fromBlock = latest > 5000n ? latest - 5000n : 0n;
+        const fromBlock = lastFromBlock > 5000n ? lastFromBlock - 5000n : 0n;
         const [bidLogs, settledLogs] = await Promise.all([
           publicClient.getLogs({ address: GAME_ADDRESS, event: BID_EVENT, fromBlock, toBlock: "latest" }),
           publicClient.getLogs({ address: GAME_ADDRESS, event: SETTLED_EVENT, fromBlock, toBlock: "latest" }),
         ]);
         if (cancelled) return;
+        for (const l of bidLogs) if (l.blockNumber && l.blockNumber > lastFromBlock) lastFromBlock = l.blockNumber;
+        for (const l of settledLogs) if (l.blockNumber && l.blockNumber > lastFromBlock) lastFromBlock = l.blockNumber;
         setBids(bidLogs.map((l) => l.args).reverse());
         setSettlements(settledLogs.map((l) => l.args).reverse());
       } catch (_) {
@@ -154,7 +156,7 @@ export function useBidFeed(target) {
       }
     };
     fetchAll();
-    const id = setInterval(fetchAll, 20_000);
+    const id = setInterval(fetchAll, 25_000);
     return () => {
       cancelled = true;
       clearInterval(id);
