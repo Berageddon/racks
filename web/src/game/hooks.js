@@ -25,6 +25,14 @@ export function useGameData() {
   const devWallet = useReadContract({ ...common, functionName: "devWallet", query: commonQuery });
   const timeRemaining = useReadContract({ ...common, functionName: "timeRemaining", query: commonQuery });
 
+  // Raw (un-rounded) views — needed to detect the "bell rang" state so the
+  // winner can claim before _openNextRound() has been triggered on-chain.
+  const rawRound = useReadContract({ ...common, functionName: "round", query: commonQuery });
+  const rawPotTotal = useReadContract({ ...common, functionName: "potTotal", query: commonQuery });
+  const rawTopBidder = useReadContract({ ...common, functionName: "topBidder", query: commonQuery });
+  const rawTopBid = useReadContract({ ...common, functionName: "topBid", query: commonQuery });
+  const roundEndsAtRaw = useReadContract({ ...common, functionName: "roundEndsAt", query: commonQuery });
+
   // A reserved payout for the connected wallet if it won a settled round.
   const pendingClaimOf = useReadContract({
     ...common,
@@ -65,6 +73,11 @@ export function useGameData() {
     roundTime: roundTime.data,
     devWallet: devWallet.data,
     timeRemaining: timeRemaining.data,
+    rawRound: rawRound.data,
+    rawPotTotal: rawPotTotal.data,
+    rawTopBidder: rawTopBidder.data,
+    rawTopBid: rawTopBid.data,
+    roundEndsAt: roundEndsAtRaw.data,
     pendingClaim,
     balance: balance.data,
     allowance: allowance.data,

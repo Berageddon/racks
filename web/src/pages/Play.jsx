@@ -62,7 +62,7 @@ function WinBanner({ round }) {
 }
 
 export default function Play() {
-  const { isConnected } = useAccount();
+  const { address, isConnected } = useAccount();
   const d = useGameData();
   const { remaining, ready } = useCountdown(d.timeRemaining);
 
@@ -71,8 +71,24 @@ export default function Play() {
   const bellRang = waitingFirstBid && ready && remaining === 0;
   const closedRound = d.round && d.round > 1n ? d.round - 1n : d.round;
 
+  // "Bell rang" = a bid exists somewhere (raw) but timeRemaining hit 0 (raw,
+  // timeRemaining is not auto-advancing). The winner can claim straight away —
+  // the contract's claim() opens the next round internally.
+  const CLAIM_WINDOW = 3600n;
+  const WINNER_BPS = 9500n;
+  const BPS_DENOM = 10000n;
+  const roundExpired = d.rawTopBidder && d.rawTopBidder !== ZERO_ADDRESS && d.timeRemaining === 0n;
+  const claimDeadline = d.roundEndsAt ? d.roundEndsAt + CLAIM_WINDOW : 0n;
+  const nowTs = BigInt(Math.floor(Date.now() / 1000));
+  const claimWindowOpen = claimDeadline > nowTs;
+  const amIWinner =
+    roundExpired && !!address && d.rawTopBidder?.toLowerCase() === address.toLowerCase();
+  const canClaimDirect = amIWinner && claimWindowOpen;
+  const claimAmount = d.rawPotTotal ? (d.rawPotTotal * WINNER_BPS) / BPS_DENOM : 0n;
+
   const myClaim = d.pendingClaim;
-  const claimLive = myClaim && Date.now() / 1000 < Number(myClaim.deadline);
+  const hasPendingClaim = myClaim && Date.now() / 1000 < Number(myClaim.deadline);
+  const claimLive = hasPendingClaim || canClaimDirect;
 
   const pill = claimLive
     ? { status: "won", label: "You won — claim!" }
@@ -133,6 +149,8 @@ export default function Play() {
           waitingFirstBid={waitingFirstBid}
           myClaim={myClaim}
           claimLive={claimLive}
+          claimRound={closedRound}
+          claimAmount={claimAmount}
         />
         <BidFeed d={d} waitingFirstBid={waitingFirstBid} />
         <ChatPanel />
@@ -152,7 +170,7 @@ function friendlyTxError(e) {
   return msg || "Transaction failed";
 }
 
-function BidPanel({ d, connected, bellRang, waitingFirstBid, myClaim, claimLive }) {
+function BidPanel({ d, connected, bellRang, waitingFirstBid, myClaim, claimLive, claimRound, claimAmount }) {
   const [multiple, setMultiple] = useState(1);
   const [phase, setPhase] = useState("idle");
   const [error, setError] = useState(null);
@@ -162,14 +180,14 @@ function BidPanel({ d, connected, bellRang, waitingFirstBid, myClaim, claimLive 
 
   const busy = phase !== "idle";
   const topBid = d.topBid || 0n;
-  // Contract tick is 10_000 wei (~1e-14 $RACKS), which is below display precision,
-  // so we step the multiplier in whole $RACKS (any whole-token amount is a valid
-  // multiple of the contract tick).
-  const STEP = 10n ** 18n;
-  const bidAmount = topBid + STEP * BigInt(multiple);
+  // The contract tick is 10_000 wei (dust), but bids are entered in whole $RACKS:
+  // every `tick` here = 10,000 $RACKS added to the pot on top of the current top bid.
+  const TICK_RACKS = 10_000n * 10n ** 18n;
+  const bidAmount = topBid + TICK_RACKS * BigInt(multiple);
   const approved = d.allowance && d.allowance >= bidAmount;
   const wrongChain = connected && !d.isOnTargetChain;
   const walletLow = d.balance && d.balance < bidAmount;
+  const claimRoundFor = myClaim?.round || claimRound;
 
   const setBid = async (action) => {
     setError(null);
@@ -208,7 +226,7 @@ function BidPanel({ d, connected, bellRang, waitingFirstBid, myClaim, claimLive 
             address: GAME_ADDRESS,
             abi: RacksGameABI,
             functionName: "claim",
-            args: [myClaim.round],
+            args: [claimRoundFor],
           });
           break;
       }
@@ -228,8 +246,8 @@ function BidPanel({ d, connected, bellRang, waitingFirstBid, myClaim, claimLive 
       {claimLive && (
         <div className="claim-box">
           <div className="claim-amount">
-            <div className="lbl">Your winnings · round #{myClaim.round?.toString()}</div>
-            <div className="val">{formatRacks(myClaim.amount)} $RACKS</div>
+            <div className="lbl">Your winnings · round #{claimRoundFor?.toString()}</div>
+            <div className="val">{formatRacks(myClaim?.amount || claimAmount)} $RACKS</div>
           </div>
           <button className="btn btn-primary" disabled={busy || !connected} onClick={() => setBid("claiming")}>
             {busy ? "Claiming…" : "CLAIM YOUR $RACKS"}
