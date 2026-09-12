@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useAccount, useWriteContract } from "wagmi";
+import { useAccount, usePublicClient, useWriteContract } from "wagmi";
+import { decodeEventLog } from "viem";
 import RacksGameABI from "../contracts/RacksGameABI.json";
 import { erc20Abi } from "../contracts/erc20Abi";
 import { GAME_ADDRESS, TOKEN_ADDRESS, formatRacks, shortAddr } from "../config";
@@ -56,12 +57,13 @@ function CountdownRing({ total, remaining, ready, awaiting }) {
   );
 }
 
-function WinBanner({ round }) {
+function WinBanner({ round, winner, amount }) {
   return (
     <div className="win-banner">
       <h3>Bell dropped</h3>
       <p>
-        Round {round?.toString()} is closed and the next pot is live off the 2.5% reserve. The
+        Round {round?.toString()} is closed{winner ? ` — won by ${winner}` : ""}
+        {amount ? ` for ${amount} $RACKS` : ""}. The next pot is live off the 2.5% reserve. The
         winner has 1 hour to claim 95% of that pot — unclaimed winnings roll into the next round.
       </p>
     </div>
@@ -72,6 +74,7 @@ export default function Play() {
   const { address, isConnected } = useAccount();
   const d = useGameData();
   const { remaining, ready } = useCountdown(d.timeRemaining);
+  const feed = useBidFeed(d.target);
 
   const hasBids = d.topBidder && d.topBidder !== ZERO_ADDRESS;
   const waitingFirstBid = !hasBids;
@@ -146,7 +149,13 @@ export default function Play() {
             </div>
           </div>
 
-          {bellRang && <WinBanner round={closedRound} />}
+          {bellRang && (
+            <WinBanner
+              round={closedRound}
+              winner={d.rawTopBidder && d.rawTopBidder !== ZERO_ADDRESS ? shortAddr(d.rawTopBidder) : undefined}
+              amount={claimAmount > 0n ? fmtWhole(claimAmount) : undefined}
+            />
+          )}
         </section>
 
         <BidPanel
@@ -158,8 +167,16 @@ export default function Play() {
           claimLive={claimLive}
           claimRound={closedRound}
           claimAmount={claimAmount}
+          pushLocalBid={feed.pushLocalBid}
         />
-        <BidFeed d={d} waitingFirstBid={waitingFirstBid} />
+        <BidFeed
+          d={d}
+          waitingFirstBid={waitingFirstBid}
+          bids={feed.bids}
+          settlements={feed.settlements}
+          loading={feed.loading}
+          you={address}
+        />
         <ChatPanel />
       </div>
     </div>
@@ -177,11 +194,22 @@ function friendlyTxError(e) {
   return msg || "Transaction failed";
 }
 
-function BidPanel({ d, connected, bellRang, waitingFirstBid, myClaim, claimLive, claimRound, claimAmount }) {
+function BidPanel({
+  d,
+  connected,
+  bellRang,
+  waitingFirstBid,
+  myClaim,
+  claimLive,
+  claimRound,
+  claimAmount,
+  pushLocalBid,
+}) {
   const [racks, setRacks] = useState(1);
   const [phase, setPhase] = useState("idle");
   const [error, setError] = useState(null);
   const { writeContractAsync } = useWriteContract();
+  const publicClient = usePublicClient({ chainId: d.target.id });
   const { openBuy } = useBuy();
   const chainId = d.target.id;
 
@@ -201,6 +229,16 @@ function BidPanel({ d, connected, bellRang, waitingFirstBid, myClaim, claimLive,
   const setBid = async (action) => {
     setError(null);
     setPhase(action);
+    const placeBid = async () => {
+      const hash = await writeContractAsync({
+        chainId,
+        address: GAME_ADDRESS,
+        abi: RacksGameABI,
+        functionName: "bid",
+        args: [bidAmount],
+      });
+      pushBidLog(hash);
+    };
     try {
       switch (action) {
         case "approving":
@@ -212,22 +250,10 @@ function BidPanel({ d, connected, bellRang, waitingFirstBid, myClaim, claimLive,
             args: [GAME_ADDRESS, BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")],
           });
           setPhase("bidding");
-          await writeContractAsync({
-            chainId,
-            address: GAME_ADDRESS,
-            abi: RacksGameABI,
-            functionName: "bid",
-            args: [bidAmount],
-          });
+          await placeBid();
           break;
         case "bidding":
-          await writeContractAsync({
-            chainId,
-            address: GAME_ADDRESS,
-            abi: RacksGameABI,
-            functionName: "bid",
-            args: [bidAmount],
-          });
+          await placeBid();
           break;
         case "claiming":
           await writeContractAsync({
@@ -243,6 +269,23 @@ function BidPanel({ d, connected, bellRang, waitingFirstBid, myClaim, claimLive,
     } catch (e) {
       setPhase("idle");
       setError(friendlyTxError(e));
+    }
+  };
+
+  // Instantly prepend the connected wallet's own bid to the feed once its tx
+  // lands, so their wallet + amount show at the top of the list right away.
+  const pushBidLog = async (hash) => {
+    if (!hash || !pushLocalBid) return;
+    try {
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+      const log = receipt.logs.find(
+        (l) => l.address.toLowerCase() === GAME_ADDRESS.toLowerCase()
+      );
+      if (!log) return;
+      const decoded = decodeEventLog({ abi: RacksGameABI, data: log.data, topics: log.topics });
+      if (decoded.eventName === "Bid") pushLocalBid(decoded.args);
+    } catch (_) {
+      /* polling will pick it up */
     }
   };
 
@@ -366,27 +409,44 @@ function BidPanel({ d, connected, bellRang, waitingFirstBid, myClaim, claimLive,
   );
 }
 
-function BidFeed({ d, waitingFirstBid }) {
-  const { bids, loading } = useBidFeed(d.target);
+function BidFeed({ d, waitingFirstBid, bids, settlements, loading, you }) {
+  const youLow = you?.toLowerCase();
   return (
     <section className="game-card feed-card">
       <h2 className="gc-title">Recent racks</h2>
       {loading ? (
         <p className="hint">Loading…</p>
-      ) : bids.length === 0 ? (
+      ) : bids.length === 0 && settlements.length === 0 ? (
         <p className="hint">No racks yet. Be the first.</p>
       ) : (
-        <ul>
-          {bids.map((b, i) => (
-            <li key={`${b.round}-${b.bidder}-${b.topBid}-${i}`}>
-              <span className="who mono">{shortAddr(b.bidder)}</span>
-              <span className="amount">
-                +{formatRacks(b.amount)} $RACKS
-              </span>
-              <span className="dim">round #{b.round?.toString()}</span>
-            </li>
-          ))}
-        </ul>
+        <>
+          {settlements.length > 0 && (
+            <div className="feed-settle-section">
+              <h3 className="feed-sub">Winners</h3>
+              {settlements.slice(0, 5).map((s, i) => (
+                <div key={`${s.round}-${s.winner}-${i}`} className="settle-item">
+                  <span className="who mono">{shortAddr(s.winner)}</span>
+                  <span className="amount">won {formatRacks(s.winnerAmount)} $RACKS</span>
+                  <span className="dim">round #{s.round?.toString()}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <ul>
+            {bids.map((b, i) => (
+              <li key={`${b.round}-${b.bidder}-${b.potTotal}-${i}`} className={youLow && b.bidder?.toLowerCase() === youLow ? "mine" : ""}>
+                <span className="who mono">
+                  {shortAddr(b.bidder)}
+                  {youLow && b.bidder?.toLowerCase() === youLow && <span className="you-tag">you</span>}
+                </span>
+                <span className="amount">
+                  +{formatRacks(b.amount)} $RACKS
+                </span>
+                <span className="dim">round #{b.round?.toString()}</span>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </section>
   );

@@ -122,39 +122,54 @@ export function useCountdown(timeRemaining) {
 export function useBidFeed(target) {
   const publicClient = usePublicClient({ chainId: target?.id });
   const [bids, setBids] = useState([]);
+  const [settlements, setSettlements] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const BID_EVENT = parseAbiItem(
+    "event Bid(uint256 indexed round, address indexed bidder, uint256 amount, uint256 topBid, uint256 potTotal, uint256 roundEndsAt)"
+  );
+  const SETTLED_EVENT = parseAbiItem(
+    "event RoundSettled(uint256 indexed round, address indexed winner, uint256 potTotal, uint256 winnerAmount, uint256 devAmount, uint256 nextPot)"
+  );
 
   useEffect(() => {
     if (!publicClient || !GAME_ADDRESS) return;
     let cancelled = false;
-    const fetchLate = async () => {
+    const fetchAll = async () => {
       try {
         if (document.visibilityState === "hidden") return;
         const latest = await publicClient.getBlockNumber();
-        const fromBlock = latest > 2000n ? latest - 2000n : 0n;
-        const logs = await publicClient.getLogs({
-          address: GAME_ADDRESS,
-          event: parseAbiItem(
-            "event Bid(uint256 indexed round, address indexed bidder, uint256 amount, uint256 topBid, uint256 potTotal, uint256 roundEndsAt)"
-          ),
-          fromBlock,
-          toBlock: "latest",
-        });
+        const fromBlock = latest > 5000n ? latest - 5000n : 0n;
+        const [bidLogs, settledLogs] = await Promise.all([
+          publicClient.getLogs({ address: GAME_ADDRESS, event: BID_EVENT, fromBlock, toBlock: "latest" }),
+          publicClient.getLogs({ address: GAME_ADDRESS, event: SETTLED_EVENT, fromBlock, toBlock: "latest" }),
+        ]);
         if (cancelled) return;
-        setBids(logs.slice(-20).map((l) => l.args).reverse());
+        setBids(bidLogs.map((l) => l.args).reverse());
+        setSettlements(settledLogs.map((l) => l.args).reverse());
       } catch (_) {
         /* polling continues */
       } finally {
         if (!cancelled) setLoading(false);
       }
     };
-    fetchLate();
-    const id = setInterval(fetchLate, 30_000);
+    fetchAll();
+    const id = setInterval(fetchAll, 20_000);
     return () => {
       cancelled = true;
       clearInterval(id);
     };
   }, [publicClient]);
 
-  return { bids, loading };
+  // Instantly prepend a bid the connected wallet just made (matches on the
+  // strictly-increasing potTotal so the next poll can't duplicate it).
+  const pushLocalBid = (args) => {
+    if (!args) return;
+    setBids((prev) => [
+      { ...args },
+      ...prev.filter((b) => !(b.round === args.round && b.bidder === args.bidder && b.potTotal === args.potTotal)),
+    ]);
+  };
+
+  return { bids: bids.slice(0, 40), settlements: settlements.slice(0, 8), loading, pushLocalBid };
 }
