@@ -537,6 +537,13 @@ function Faq() {
         No. The contract reverts any bid that isn&apos;t a whole multiple of the tick and at least one
         tick above the current top bid.
       </p>
+      <h3>Who pays the gas for the winner claim?</h3>
+      <p>
+        The winner. Payouts are pull-based and only the winner can call{" "}
+        <span className="mono">claim()</span>, so the winner&apos;s wallet covers the gas for the
+        transaction that releases both their 95% and that round&apos;s 2.5% treasury share. The
+        treasury never needs to act — it is paid automatically in the same transaction.
+      </p>
       <h3>Do I get money back if I get outbid?</h3>
       <p>
         No — this is an all-pay auction. Every bid stays in the pot. That&apos;s what makes it a game,
