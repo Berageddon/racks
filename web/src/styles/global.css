@@ -1198,6 +1198,16 @@ code.mono {
   font-size: 13px;
   font-weight: 650;
   color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 420px) {
+  .modal-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .modal {
+    padding: 18px;
+  }
 }
 
 .modal-foot {

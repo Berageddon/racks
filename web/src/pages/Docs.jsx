@@ -364,6 +364,14 @@ function Token() {
               <td>Robinhood Chain (L2, Arbitrum), chain ID 4663</td>
             </tr>
             <tr>
+              <td>Contract</td>
+              <td className="mono">
+                <a href="https://robinhoodchain.blockscout.com/token/0xe88AC3eb472f7b6fe1e8Ae4fCb53dF48A731b352" target="_blank" rel="noreferrer" style={{ color: "var(--accent)" }}>
+                  0xe88AC3eb472f7b6fe1e8Ae4fCb53dF48A731b352
+                </a>
+              </td>
+            </tr>
+            <tr>
               <td>Standard</td>
               <td className="mono">ERC-20</td>
             </tr>
@@ -376,8 +384,17 @@ function Token() {
               <td>None (fixed supply)</td>
             </tr>
             <tr>
+              <td>Trading tax</td>
+              <td>2% buy / 2% sell (set at launch on the pons pool)</td>
+            </tr>
+            <tr>
               <td>Launch</td>
-              <td>Pons launchpad (liquidity locked at launch)</td>
+              <td>
+                <a href="https://www.ponsfamily.com/launchpad/0xe88AC3eb472f7b6fe1e8Ae4fCb53dF48A731b352" target="_blank" rel="noreferrer" style={{ color: "var(--accent)" }}>
+                  pons launchpad
+                </a>{" "}
+                (liquidity on a bonding curve)
+              </td>
             </tr>
           </tbody>
         </table>

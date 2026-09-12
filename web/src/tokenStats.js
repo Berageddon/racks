@@ -45,9 +45,9 @@ async function fetchLive(publicClient) {
 
   let holders = null;
   try {
-    const res = await fetch(`https://robinhoodchain.blockscout.com/api/v2/addresses/${token}/counters`);
+    const res = await fetch(`https://robinhoodchain.blockscout.com/api/v2/tokens/${token}`);
     const j = await res.json();
-    holders = j?.token_holders_count ?? null;
+    holders = j?.holders_count ?? null;
   } catch (_) {}
 
   return { supply, price, liquidity, holders };

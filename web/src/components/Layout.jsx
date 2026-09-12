@@ -112,8 +112,12 @@ export default function Layout() {
               <h4>$RACKS</h4>
               <ul>
                 <li>
-                  <a href="https://ponsfamily.com/launchpad" target="_blank" rel="noreferrer">
-                    Launched on Pons
+                  <a
+                    href="https://www.ponsfamily.com/launchpad/0xe88AC3eb472f7b6fe1e8Ae4fCb53dF48A731b352"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Buy on Pons
                   </a>
                 </li>
                 <li>
