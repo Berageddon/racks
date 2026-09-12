@@ -1,13 +1,14 @@
-﻿// Sources flattened with hardhat v2.29.1 https://hardhat.org
-
 // SPDX-License-Identifier: MIT
+pragma solidity 0.8.24;
+
+// Sources flattened with hardhat v2.29.1 https://hardhat.org
+
 
 // File @openzeppelin/contracts/utils/Context.sol@v5.6.1
 
 // Original license: SPDX_License_Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.0.1) (utils/Context.sol)
 
-pragma solidity ^0.8.20;
 
 /**
  * @dev Provides information about the current execution context, including the
@@ -39,7 +40,6 @@ abstract contract Context {
 // Original license: SPDX_License_Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.0.0) (access/Ownable.sol)
 
-pragma solidity ^0.8.20;
 
 /**
  * @dev Contract module which provides a basic access control mechanism, where
@@ -141,7 +141,6 @@ abstract contract Ownable is Context {
 // Original license: SPDX_License_Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.4.0) (utils/introspection/IERC165.sol)
 
-pragma solidity >=0.4.16;
 
 /**
  * @dev Interface of the ERC-165 standard, as defined in the
@@ -170,7 +169,6 @@ interface IERC165 {
 // Original license: SPDX_License_Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.4.0) (interfaces/IERC165.sol)
 
-pragma solidity >=0.4.16;
 
 
 // File @openzeppelin/contracts/token/ERC20/IERC20.sol@v5.6.1
@@ -178,7 +176,6 @@ pragma solidity >=0.4.16;
 // Original license: SPDX_License_Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.4.0) (token/ERC20/IERC20.sol)
 
-pragma solidity >=0.4.16;
 
 /**
  * @dev Interface of the ERC-20 standard as defined in the ERC.
@@ -261,7 +258,6 @@ interface IERC20 {
 // Original license: SPDX_License_Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.4.0) (interfaces/IERC20.sol)
 
-pragma solidity >=0.4.16;
 
 
 // File @openzeppelin/contracts/interfaces/IERC1363.sol@v5.6.1
@@ -269,7 +265,6 @@ pragma solidity >=0.4.16;
 // Original license: SPDX_License_Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.4.0) (interfaces/IERC1363.sol)
 
-pragma solidity >=0.6.2;
 
 
 /**
@@ -357,7 +352,6 @@ interface IERC1363 is IERC20, IERC165 {
 // Original license: SPDX_License_Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.5.0) (token/ERC20/utils/SafeERC20.sol)
 
-pragma solidity ^0.8.20;
 
 
 /**
@@ -640,7 +634,6 @@ library SafeERC20 {
 // OpenZeppelin Contracts (last updated v5.1.0) (utils/StorageSlot.sol)
 // This file was procedurally generated from scripts/generate/templates/StorageSlot.js.
 
-pragma solidity ^0.8.20;
 
 /**
  * @dev Library for reading and writing primitive types to specific storage slots.
@@ -786,7 +779,6 @@ library StorageSlot {
 // Original license: SPDX_License_Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.5.0) (utils/ReentrancyGuard.sol)
 
-pragma solidity ^0.8.20;
 
 /**
  * @dev Contract module that helps prevent reentrant calls to a function.
@@ -905,7 +897,6 @@ abstract contract ReentrancyGuard {
 // File contracts/RacksGame.sol
 
 // Original license: SPDX_License_Identifier: MIT
-pragma solidity 0.8.24;
 
 
 
