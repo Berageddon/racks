@@ -7,8 +7,15 @@ import { useGameData, useCountdown, useBidFeed } from "../game/hooks";
 import { useBuy } from "../components/BuyModal";
 import ChatPanel from "../components/ChatPanel";
 
-const TICK_MULTIPLES = [1, 2, 5, 10, 25];
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+
+// Whole-number RACKS formatting without a trailing ".00" (cleaner for bid amounts).
+function fmtWhole(raw) {
+  const val = BigInt(raw && raw.toString ? raw.toString() : 0);
+  const whole = val / 10n ** 18n;
+  const frac = val % 10n ** 18n;
+  return frac === 0n ? new Intl.NumberFormat("en-US").format(whole) : formatRacks(val);
+}
 
 function CountdownRing({ total, remaining, ready, awaiting }) {
   const R = 48;
@@ -171,7 +178,7 @@ function friendlyTxError(e) {
 }
 
 function BidPanel({ d, connected, bellRang, waitingFirstBid, myClaim, claimLive, claimRound, claimAmount }) {
-  const [multiple, setMultiple] = useState(1);
+  const [racks, setRacks] = useState(1);
   const [phase, setPhase] = useState("idle");
   const [error, setError] = useState(null);
   const { writeContractAsync } = useWriteContract();
@@ -179,11 +186,13 @@ function BidPanel({ d, connected, bellRang, waitingFirstBid, myClaim, claimLive,
   const chainId = d.target.id;
 
   const busy = phase !== "idle";
-  const topBid = d.topBid || 0n;
-  // The contract tick is 10_000 wei (dust), but bids are entered in whole $RACKS:
-  // every `tick` here = 10,000 $RACKS added to the pot on top of the current top bid.
+  // Your bid = the CURRENT POT + whatever you add on top. Each `rack` = 10,000
+  // $RACKS. Any whole-$RACKS bid satisfies the contract's (tiny) tick rule, and
+  // since the pot always holds every bid ever made, pot + 10k is always a valid
+  // beat of the previous top bid.
   const TICK_RACKS = 10_000n * 10n ** 18n;
-  const bidAmount = topBid + TICK_RACKS * BigInt(multiple);
+  const potTotal = d.potTotal || 0n;
+  const bidAmount = potTotal + TICK_RACKS * BigInt(racks);
   const approved = d.allowance && d.allowance >= bidAmount;
   const wrongChain = connected && !d.isOnTargetChain;
   const walletLow = d.balance && d.balance < bidAmount;
@@ -312,23 +321,28 @@ function BidPanel({ d, connected, bellRang, waitingFirstBid, myClaim, claimLive,
             </div>
           )}
 
-          <div className="ticks">
-            {TICK_MULTIPLES.map((m) => (
-              <button
-                key={m}
-                className={`tick-btn ${m === multiple ? "active" : ""}`}
-                onClick={() => setMultiple(m)}
-              >
-                +{m}×
-              </button>
-            ))}
-          </div>
-
           <div className="next-bid">
             <span>
               <div className="lbl">Your bid</div>
-              <div className="val">{formatRacks(bidAmount)} $RACKS</div>
+              <div className="val">{fmtWhole(bidAmount)} $RACKS</div>
             </span>
+          </div>
+
+          <div className="tick-row">
+            <button
+              className="step-btn"
+              disabled={racks <= 1}
+              onClick={() => setRacks((r) => Math.max(1, r - 1))}
+              aria-label="Subtract one rack"
+            >
+              −
+            </button>
+            <span className="step-note">
+              Pot <b>{fmtWhole(potTotal)}</b> + {fmtWhole(TICK_RACKS * BigInt(racks))} on top
+            </span>
+            <button className="step-btn" onClick={() => setRacks((r) => r + 1)} aria-label="Add one rack">
+              +
+            </button>
           </div>
 
           {!approved && (
@@ -337,11 +351,11 @@ function BidPanel({ d, connected, bellRang, waitingFirstBid, myClaim, claimLive,
 
           {approved ? (
             <button className="btn btn-primary" disabled={busy || !connected} onClick={() => setBid("bidding")}>
-              {busy ? "Racking in…" : "Rack in"}
+              {busy ? "Racking in…" : `Rack in +${fmtWhole(TICK_RACKS * BigInt(racks))} $RACKS`}
             </button>
           ) : (
             <button className="btn btn-primary" disabled={busy || !connected} onClick={() => setBid("approving")}>
-              {busy ? "Approving…" : "Approve $RACKS, then rack in"}
+              {busy ? "Approving…" : `Approve, then rack in +${fmtWhole(TICK_RACKS * BigInt(racks))} $RACKS`}
             </button>
           )}
         </>

@@ -1515,6 +1515,49 @@ code.mono {
   color: var(--accent);
 }
 
+.tick-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.step-btn {
+  flex: 0 0 auto;
+  min-width: 46px;
+  padding: 10px 0;
+  border-radius: 12px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel-2);
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: 0.14s;
+}
+
+.step-btn:hover {
+  border-color: var(--line-accent);
+}
+
+.step-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.step-note {
+  flex: 1;
+  text-align: center;
+  font-size: 13px;
+  color: var(--faint);
+}
+
+.step-note b {
+  color: var(--ink);
+  font-family: var(--font-mono);
+}
+
 .error {
   background: var(--danger-soft);
   border: 1px solid rgba(255, 100, 100, 0.3);

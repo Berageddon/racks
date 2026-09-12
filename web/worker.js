@@ -14,6 +14,20 @@ const RPC_UPSTREAMS = {
   "46630": "https://rpc.testnet.chain.robinhood.com",
 };
 
+// Short-lived cache for identical JSON-RPC reads (the app polls the same state
+// every ~10-30s). Collapses repeated polls so neither the upstream nor CF edge
+// rate limits get tripped.
+const RPC_CACHE_TTL_MS = 5000;
+
+function hashCode(str) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = (h * 0x01000193) >>> 0;
+  }
+  return h.toString(16);
+}
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -131,6 +145,23 @@ export default {
           headers: { ...CORS, "Content-Type": "application/json" },
         });
       }
+      const rawBody = await request.text();
+      const cacheKey = `https://racks/api/rpc/${encodeURIComponent(upstream)}/${hashCode(rawBody)}`;
+
+      const cache = caches.default;
+      try {
+        const cached = await cache.match(cacheKey);
+        if (cached) {
+          const j = await cached.json();
+          if (Date.now() - (j._t || 0) < RPC_CACHE_TTL_MS) {
+            return new Response(JSON.stringify(j._body), {
+              status: 200,
+              headers: { ...CORS, "Content-Type": "application/json", "Cache-Control": "no-store" },
+            });
+          }
+        }
+      } catch (_) {}
+
       try {
         const rpcRes = await fetch(upstream, {
           method: "POST",
@@ -138,16 +169,23 @@ export default {
             "Content-Type": request.headers.get("Content-Type") || "application/json",
             Accept: "application/json",
           },
-          body: request.body,
+          body: rawBody,
         });
-        const body = await rpcRes.arrayBuffer();
-        return new Response(body, {
-          status: rpcRes.status,
-          headers: {
-            ...CORS,
-            "Content-Type": rpcRes.headers.get("Content-Type") || "application/json",
-            "Cache-Control": "no-store",
-          },
+        if (!rpcRes.ok) {
+          return new Response(await rpcRes.text(), {
+            status: rpcRes.status,
+            headers: { ...CORS, "Content-Type": "application/json", "Cache-Control": "no-store" },
+          });
+        }
+        const resultText = await rpcRes.text();
+        try {
+          ctx.waitUntil(
+            cache.put(cacheKey, json({ _t: Date.now(), _body: JSON.parse(resultText) }, { "Cache-Control": "no-store" }))
+          );
+        } catch (_) {}
+        return new Response(resultText, {
+          status: 200,
+          headers: { ...CORS, "Content-Type": "application/json", "Cache-Control": "no-store" },
         });
       } catch (err) {
         return new Response(JSON.stringify({ error: "rpc_upstream_failed", message: String((err && err.message) || err) }), {

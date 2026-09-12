@@ -11,8 +11,11 @@ export function useGameData() {
   const { address } = useAccount();
 
   const common = { address: GAME_ADDRESS, abi: RacksGameABI, chainId: target.id };
-  // Poll every 5s so the game state (pot, top bid, clock) tracks the chain live.
-  const commonQuery = { enabled: !!GAME_ADDRESS, refetchInterval: 5000 };
+  // Poll every 12s so the game state (pot, top bid, clock) tracks the chain live —
+  // frequent enough for a 3-minute round, slow enough to stay under the edge rate
+  // limits that caused 403/429s on /rpc.
+  const commonQuery = { enabled: !!GAME_ADDRESS, refetchInterval: 12000 };
+  const rawQuery = { enabled: !!GAME_ADDRESS, refetchInterval: 20000 };
 
   // The game auto-advances the moment a round's countdown expires, so we read the
   // derived "effective" views that reflect the live round without needing a tx.
@@ -27,18 +30,18 @@ export function useGameData() {
 
   // Raw (un-rounded) views — needed to detect the "bell rang" state so the
   // winner can claim before _openNextRound() has been triggered on-chain.
-  const rawRound = useReadContract({ ...common, functionName: "round", query: commonQuery });
-  const rawPotTotal = useReadContract({ ...common, functionName: "potTotal", query: commonQuery });
-  const rawTopBidder = useReadContract({ ...common, functionName: "topBidder", query: commonQuery });
-  const rawTopBid = useReadContract({ ...common, functionName: "topBid", query: commonQuery });
-  const roundEndsAtRaw = useReadContract({ ...common, functionName: "roundEndsAt", query: commonQuery });
+  const rawRound = useReadContract({ ...common, functionName: "round", query: rawQuery });
+  const rawPotTotal = useReadContract({ ...common, functionName: "potTotal", query: rawQuery });
+  const rawTopBidder = useReadContract({ ...common, functionName: "topBidder", query: rawQuery });
+  const rawTopBid = useReadContract({ ...common, functionName: "topBid", query: rawQuery });
+  const roundEndsAtRaw = useReadContract({ ...common, functionName: "roundEndsAt", query: rawQuery });
 
   // A reserved payout for the connected wallet if it won a settled round.
   const pendingClaimOf = useReadContract({
     ...common,
     functionName: "pendingClaimOf",
     args: address ? [address] : undefined,
-    query: { enabled: !!GAME_ADDRESS && !!address, refetchInterval: 5000 },
+    query: { enabled: !!GAME_ADDRESS && !!address, refetchInterval: 20000 },
   });
   const rawClaim = pendingClaimOf.data;
   const pendingClaim =
@@ -51,13 +54,13 @@ export function useGameData() {
     ...tokenCommon,
     functionName: "balanceOf",
     args: address ? [address] : undefined,
-    query: { enabled: !!address && !!TOKEN_ADDRESS },
+    query: { enabled: !!address && !!TOKEN_ADDRESS, refetchInterval: 20000 },
   });
   const allowance = useReadContract({
     ...tokenCommon,
     functionName: "allowance",
     args: address ? [address, GAME_ADDRESS] : undefined,
-    query: { enabled: !!address && !!GAME_ADDRESS && !!TOKEN_ADDRESS },
+    query: { enabled: !!address && !!GAME_ADDRESS && !!TOKEN_ADDRESS, refetchInterval: 20000 },
   });
 
   return {
@@ -146,7 +149,7 @@ export function useBidFeed(target) {
       }
     };
     fetchLate();
-    const id = setInterval(fetchLate, 15_000);
+    const id = setInterval(fetchLate, 30_000);
     return () => {
       cancelled = true;
       clearInterval(id);
