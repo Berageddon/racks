@@ -93,7 +93,19 @@ export default {
       }
     }
 
-    if (env.ASSETS) return env.ASSETS.fetch(request);
+    // Everything else ships the static app. The ASSETS binding serves real files;
+    // anything unknown falls back to index.html so the SPA keeps working.
+    if (env.ASSETS) {
+      let res = await env.ASSETS.fetch(request);
+      if (res.status === 404 && (request.method === "GET" || request.method === "HEAD")) {
+        const spaUrl = new URL("./index.html", url.origin);
+        const spa = await env.ASSETS.fetch(new Request(`${spaUrl.origin}${spaUrl.pathname}`, request));
+        if (spa.status === 200) {
+          res = new Response(spa.body, { status: 200, statusText: "OK", headers: spa.headers });
+        }
+      }
+      return res;
+    }
     return new Response("Not found", { status: 404 });
   },
 };
