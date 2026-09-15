@@ -44,10 +44,13 @@ export function useGameData() {
     query: { enabled: !!GAME_ADDRESS && !!address, refetchInterval: 20000, retry: false },
   });
   const rawClaim = pendingClaimOf.data;
-  const pendingClaim =
-    rawClaim && rawClaim[3]
-      ? { round: rawClaim[0], amount: rawClaim[1], deadline: rawClaim[2] }
-      : null;
+  // Ignore claims whose deadline has already passed — sweep will forfeit them
+  // into futureSeed on the next interaction, so the UI shouldn't show them as
+  // claimable.
+  const claimLive = rawClaim && rawClaim[3] && rawClaim[2] > BigInt(Math.floor(Date.now() / 1000));
+  const pendingClaim = claimLive
+    ? { round: rawClaim[0], amount: rawClaim[1], deadline: rawClaim[2] }
+    : null;
 
   const tokenCommon = { address: TOKEN_ADDRESS, abi: erc20Abi, chainId: target.id };
   const balance = useReadContract({
