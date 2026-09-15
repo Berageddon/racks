@@ -10,12 +10,13 @@ function CountdownRing({ total, remaining, ready, awaiting }) {
   const R = 48;
   const CIRC = 2 * Math.PI * R;
   const r = ready && remaining != null ? remaining : 0;
+  const paused = !ready || awaiting;
   const passed = Math.max(0, total - r);
   const pct = total > 0 ? passed / total : 0;
-  const low = r <= 10 && total > 0;
+  const low = !paused && r <= 10 && total > 0;
   const mins = Math.floor(r / 60);
   const secs = r % 60;
-  const time = ready ? `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}` : "—:—";
+  const time = paused ? "—:—" : `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
   const caption = !ready ? "SYNCING" : awaiting ? "AWAITING" : r === 0 && total > 0 ? "CLOSED" : low ? "FINAL" : "TO BELL";
 
   return (
