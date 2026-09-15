@@ -7,6 +7,7 @@ fs.mkdirSync(outDir, { recursive: true });
 
 const sources = [
   ["artifacts/contracts/RacksGame.sol/RacksGame.json", "RacksGameABI.json"],
+  ["artifacts/contracts/RackLotto.sol/RackLotto.json", "RackLottoABI.json"],
 ];
 
 for (const [artifactPath, outName] of sources) {
