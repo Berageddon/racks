@@ -215,12 +215,15 @@ function BidPanel({
 
   const busy = phase !== "idle";
   // Your bid = the CURRENT POT + whatever you add on top. Each `rack` = 10,000
-  // $RACKS. Any whole-$RACKS bid satisfies the contract's (tiny) tick rule, and
-  // since the pot always holds every bid ever made, pot + 10k is always a valid
-  // beat of the previous top bid.
+  // $RACKS. Since the pot always holds every bid ever made, pot + 10k is always
+  // a valid beat of the previous top bid. The pot can carry tiny residue (the
+  // 2.5% reserve split isn't a perfect multiple of the contract's 10,000-wei
+  // tick), so the amount is snapped DOWN to a whole multiple of `tick` — a
+  // sub-0.00000001 $RACKS adjustment that keeps every bid within the tick rule.
   const TICK_RACKS = 10_000n * 10n ** 18n;
+  const tickWei = d.tick > 0n ? d.tick : 10_000n;
   const potTotal = d.potTotal || 0n;
-  const bidAmount = potTotal + TICK_RACKS * BigInt(racks);
+  const bidAmount = ((potTotal + TICK_RACKS * BigInt(racks)) / tickWei) * tickWei;
   const approved = d.allowance && d.allowance >= bidAmount;
   const wrongChain = connected && !d.isOnTargetChain;
   const walletLow = d.balance && d.balance < bidAmount;
