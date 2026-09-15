@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useAccount, usePublicClient, useWriteContract } from "wagmi";
-import { decodeEventLog } from "viem";
+import { useAccount, usePublicClient, useSendTransaction } from "wagmi";
+import { decodeEventLog, encodeFunctionData } from "viem";
 import RacksGameABI from "../contracts/RacksGameABI.json";
 import { erc20Abi } from "../contracts/erc20Abi";
 import { GAME_ADDRESS, TOKEN_ADDRESS, formatRacks, shortAddr } from "../config";
@@ -208,7 +208,7 @@ function BidPanel({
   const [racks, setRacks] = useState(1);
   const [phase, setPhase] = useState("idle");
   const [error, setError] = useState(null);
-  const { writeContractAsync } = useWriteContract();
+  const { sendTransactionAsync } = useSendTransaction();
   const publicClient = usePublicClient({ chainId: d.target.id });
   const { openBuy } = useBuy();
   const chainId = d.target.id;
@@ -230,40 +230,31 @@ function BidPanel({
     setError(null);
     setPhase(action);
     const placeBid = async () => {
-      const hash = await writeContractAsync({
-        chainId,
-        address: GAME_ADDRESS,
-        abi: RacksGameABI,
-        functionName: "bid",
-        args: [bidAmount],
-      });
+      const data = encodeFunctionData({ abi: RacksGameABI, functionName: "bid", args: [bidAmount] });
+      const hash = await sendTransactionAsync({ chainId, to: GAME_ADDRESS, data });
       pushBidLog(hash);
     };
     try {
       switch (action) {
-        case "approving":
-          await writeContractAsync({
-            chainId,
-            address: TOKEN_ADDRESS,
+        case "approving": {
+          const data = encodeFunctionData({
             abi: erc20Abi,
             functionName: "approve",
             args: [GAME_ADDRESS, BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")],
           });
+          await sendTransactionAsync({ chainId, to: TOKEN_ADDRESS, data });
           setPhase("bidding");
           await placeBid();
           break;
+        }
         case "bidding":
           await placeBid();
           break;
-        case "claiming":
-          await writeContractAsync({
-            chainId,
-            address: GAME_ADDRESS,
-            abi: RacksGameABI,
-            functionName: "claim",
-            args: [claimRoundFor],
-          });
+        case "claiming": {
+          const data = encodeFunctionData({ abi: RacksGameABI, functionName: "claim", args: [claimRoundFor] });
+          await sendTransactionAsync({ chainId, to: GAME_ADDRESS, data });
           break;
+        }
       }
       setPhase("idle");
     } catch (e) {
